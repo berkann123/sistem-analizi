@@ -1,0 +1,8 @@
+{% load sayilar l10n %}<tr{% if row.is_critical %} class="critical-row"{% endif %}>
+  <td style="text-align:left">{{ row.item.sku }} · {{ row.item.name }}{% if row.is_critical %} <span class="badge critical">Kritik</span>{% endif %}</td>
+  <td>{{ row.item.current_stock|miktar }} {{ row.item.unit }}</td>
+  <td>{{ row.item.reorder_level|miktar }} {{ row.item.unit }}</td>
+  <td>{% if row.on_order %}{{ row.on_order|miktar }} {{ row.item.unit }}{% else %}—{% endif %}</td>
+  <td><input name="miktar_{{ row.item.pk|unlocalize }}" value="{{ row.suggested|girdi }}" inputmode="decimal" style="width:110px"> {{ row.item.unit }}</td>
+  <td><input name="fiyat_{{ row.item.pk|unlocalize }}" value="{{ row.price|girdi }}" inputmode="decimal" style="width:110px"></td>
+</tr>

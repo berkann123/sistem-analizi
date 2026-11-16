@@ -1,0 +1,401 @@
+{% extends "base.html" %}
+{% load sayilar %}
+{% block title %}Maliyet Analizi{% endblock %}
+{% block heading %}Maliyet analizi{% endblock %}
+{% block extra_css %}
+    .filter { display: flex; align-items: end; gap: 14px; flex-wrap: wrap; }
+    .c1 { background: #e3a857; } .c2 { background: #7fb7be; } .c3 { background: #b9a6d6; } .c4 { background: #5b8fb9; } .c5 { background: #9aa9b2; } .c6 { background: #123448; } .c7 { background: #c97b63; } .c8 { background: #d9c27a; }
+    table.dense { font-size: 14px; }
+    tr.typehead td { background: #f3f6f8; font-weight: 700; color: #123448; }
+    table.dense th, table.dense td { padding: 11px 7px; }
+    .story { font-size: 16px; line-height: 1.75; color: #2c4553; margin: 0; }
+    .story b { color: #123448; }
+    .story + .story { margin-top: 8px; }
+    .parts { display: flex; height: 26px; border-radius: 8px; overflow: hidden; gap: 2px; margin-top: 12px; background: white; }
+    .parts span { display: block; height: 100%; }
+    .part-list { list-style: none; padding: 0; margin: 12px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 8px 28px; }
+    .part-list li { display: grid; grid-template-columns: 12px 1fr auto 48px; align-items: center; gap: 8px; font-size: 14px; color: #2c4553; }
+    .part-list li b { color: #123448; white-space: nowrap; text-align: right; }
+    .part-list li .help { text-align: right; white-space: nowrap; }
+    .part-list i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+    /* Maliyet özeti kartları: ortak gider geniş kart (grup dağılımıyla), yanında doluluk ve boşluk kartları. */
+    .sum-title { font-size: 19px; color: #123448; margin: 4px 0 12px; }
+    .sum-title small { font-size: 13px; font-weight: 500; color: #6b7f89; }
+    .sum-grid { display: grid; grid-template-columns: 1.6fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 16px; }
+    @media (max-width: 1200px) { .sum-grid { grid-template-columns: 1fr 1fr; } }
+    @media (max-width: 640px) { .sum-grid { grid-template-columns: 1fr; } }
+    .sum-card { background: white; border: 1px solid #e3eaee; border-top: 4px solid #176c70; border-radius: 14px; padding: 18px; }
+    .sum-card.shared { border-top-color: #123448; }
+    .sum-card.warn { border-top-color: #c4452f; background: #fff8f6; }
+    .sum-card .k { font-size: 13px; color: #637783; font-weight: 600; }
+    .sum-card .v { font-size: 28px; font-weight: 750; color: #123448; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
+    .sum-card .v.low { color: #a33725; }
+    .sum-card .v.up { color: #256847; }
+    .sum-card .d { font-size: 13px; color: #5d717c; line-height: 1.55; margin: 0 0 6px; }
+    .sum-card .d b { color: #123448; }
+    .g1 { background: #123448; } .g2 { background: #176c70; } .g3 { background: #e3a857; } .g4 { background: #7fb7be; } .g5 { background: #b9a6d6; } .g6 { background: #c97b63; } .g7 { background: #9aa9b2; } .g8 { background: #d9c27a; }
+    .glist { list-style: none; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+    .glist li { display: grid; grid-template-columns: 10px 1fr auto 46px; gap: 8px; align-items: center; font-size: 13px; color: #2c4553; }
+    .glist i { width: 10px; height: 10px; border-radius: 3px; }
+    .glist b { color: #123448; text-align: right; white-space: nowrap; }
+    .glist em { font-style: normal; color: #788991; text-align: right; }
+    /* Örnek oda: oda tipi seçimi + toplam maliyet kartı ve iki parçasının kartları. */
+    .room-ex { margin-bottom: 16px; }
+    .ex-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+    .chips a { padding: 7px 12px; border-radius: 99px; background: white; border: 1px solid #d5e0e5; color: #2c4553; font-size: 13px; font-weight: 600; text-decoration: none; }
+    .chips a:hover { border-color: #176c70; }
+    .chips a.on { background: #123448; border-color: #123448; color: white; }
+    .ex-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 14px; }
+    @media (max-width: 1100px) { .ex-grid { grid-template-columns: 1fr; } }
+    .ex-card { background: white; border: 1px solid #e3eaee; border-radius: 14px; padding: 18px; border-top: 4px solid #176c70; }
+    .ex-card.var { border-top-color: #e3a857; }
+    .ex-card.fix { border-top-color: #123448; }
+    .ex-card .k { font-size: 13px; color: #637783; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .ex-card .k i { width: 10px; height: 10px; border-radius: 3px; display: inline-block; }
+    .ex-card .v { font-size: 28px; font-weight: 750; color: #123448; margin: 6px 0 8px; font-variant-numeric: tabular-nums; }
+    .ex-card .v small { font-size: 14px; font-weight: 600; color: #788991; }
+    .ex-card .d { font-size: 13px; color: #5d717c; line-height: 1.55; margin: 0 0 8px; }
+    .ex-card .muted { color: #8a9aa2; }
+    .ex-card .glist li, .glist.calc li { grid-template-columns: 1fr auto; }
+    .rule { list-style: none; padding: 0; margin: 14px 0 0; display: grid; gap: 8px; }
+    .rule li { display: grid; grid-template-columns: 150px 1fr; gap: 10px; font-size: 13px; color: #2c4553; line-height: 1.45; }
+    .rule li > b { font-variant-numeric: tabular-nums; }
+    .rule .bad { color: #a33725; } .rule .mid { color: #a8641a; } .rule .ok { color: #256847; }
+    /* "Nasıl hesaplandı?" açılır bölümü: kartın altında adım adım hesap. */
+    details.how { margin-top: 12px; border-top: 1px dashed #d5e0e5; padding-top: 10px; }
+    details.how > summary { cursor: pointer; font-size: 13px; font-weight: 700; color: #176c70; list-style: none; display: flex; align-items: center; gap: 6px; }
+    details.how > summary::-webkit-details-marker { display: none; }
+    details.how > summary::before { content: "▸"; transition: transform .12s; }
+    details.how[open] > summary::before { transform: rotate(90deg); }
+    details.how p { font-size: 13px; color: #5d717c; line-height: 1.55; margin: 10px 0 0; }
+    details.how .muted { color: #8a9aa2; font-size: 12px; }
+    .steps { list-style: none; counter-reset: s; padding: 0; margin: 10px 0 0; display: grid; gap: 6px; }
+    .steps li { counter-increment: s; display: grid; grid-template-columns: 20px 1fr auto; gap: 8px; align-items: start; font-size: 13px; color: #2c4553; line-height: 1.45; background: #f6f9fa; border-radius: 8px; padding: 8px 10px; }
+    .steps li::before { content: counter(s); font-weight: 700; color: #176c70; }
+    .steps li b { color: #123448; white-space: nowrap; font-variant-numeric: tabular-nums; }
+    .steps li.sum { background: #eaf2f3; }
+    .steps li.sum::before { content: "="; }
+    /* Aylık özet: tek seferlik gider etiketi, toplam ve yorum satırı. */
+    table.months td.neg { color: #a33725; } table.months td.pos { color: #256847; }
+    table.months td.hi { background: #fff4e5; font-weight: 700; }
+    .oneoff { display: block; margin-top: 4px; font-size: 11px; font-weight: 700; color: #8a4b0f; background: #fff4e5; border-radius: 6px; padding: 2px 6px; white-space: normal; max-width: 220px; }
+    table.months tfoot tr.total td { font-weight: 750; color: #123448; border-top: 2px solid #123448; background: #f3f6f8; }
+    table.months tfoot tr.total td.neg { color: #a33725; } table.months tfoot tr.total td.pos { color: #256847; }
+    table.months tr.verdict td { text-align: left; white-space: normal; line-height: 1.6; font-size: 14px; padding: 14px 12px; }
+    table.months tr.verdict.good td { background: #e8f5ee; color: #1f5a3c; }
+    table.months tr.verdict.bad td { background: #fff0ed; color: #8a2e1f; }
+    details.more > summary { cursor: pointer; font-weight: 700; color: #123448; padding: 4px 0; }
+    details.more[open] > summary { margin-bottom: 12px; }
+    /* --- Ay sekmeleri ve renkli açılır kartlar (v63) --- */
+    .month-pick { background: white; border: 1px solid #e3eaee; border-radius: 16px; padding: 16px 18px; margin-bottom: 16px; }
+    .mp-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .mp-head b { color: #123448; font-size: 15px; }
+    .years { display: flex; gap: 6px; }
+    .years a { padding: 6px 14px; border-radius: 99px; background: #eef2f4; color: #2c4553; font-weight: 700; font-size: 13px; text-decoration: none; }
+    .years a.on { background: #123448; color: white; }
+    .tabs { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 6px; }
+    @media (max-width: 1280px) { .tabs { grid-template-columns: repeat(6, minmax(0, 1fr)); } }
+    @media (max-width: 640px) { .tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+    .tab { display: flex; flex-direction: column; gap: 2px; padding: 9px 10px; border-radius: 12px; border: 1px solid #dce5ea; background: #f8fafb;
+           color: #123448; font-weight: 700; font-size: 13px; text-decoration: none; transition: transform .1s, box-shadow .1s, border-color .1s; }
+    .tab i { font-style: normal; font-weight: 600; font-size: 11px; color: #6b7f89; }
+    .tab em { font-style: normal; font-size: 11px; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .tab em.pos { color: #256847; } .tab em.neg { color: #a33725; }
+    a.tab:hover { transform: translateY(-2px); box-shadow: 0 6px 14px #12344818; border-color: #176c70; }
+    .tab.closed { border-left: 4px solid #3c9a6b; }
+    .tab.current { border-left: 4px solid #e59a3c; background: #fff8ee; }
+    .tab.future { opacity: .45; border-style: dashed; }
+    .tab.empty { opacity: .7; }
+    .tab.on { background: linear-gradient(135deg, #176c70, #123448); border-color: #123448; color: white; box-shadow: 0 8px 18px #17647036; }
+    .tab.on i { color: #cfe7e4; } .tab.on em.pos { color: #b8f0cf; } .tab.on em.neg { color: #ffc9bd; }
+
+    details.sec { --ac: #176c70; --tint: #e9f5f4; background: white; border: 1px solid #e3eaee; border-left: 5px solid var(--ac);
+                  border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+    details.sec.room { --ac: #d4862c; --tint: #fdf3e6; }
+    details.sec.types { --ac: #6b5ca5; --tint: #f0edf8; }
+    details.sec.year { --ac: #2f5f8a; --tint: #eaf1f8; }
+    details.sec.detail { --ac: #5d717c; --tint: #eef2f4; }
+    details.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 14px; padding: 14px 18px; transition: background .12s; }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary:hover { background: var(--tint); }
+    details.sec > summary:focus-visible { outline: 3px solid var(--ac); outline-offset: -3px; }
+    details.sec[open] > summary { background: var(--tint); border-bottom: 1px solid #e3eaee; }
+    .sec-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; background: var(--ac); color: white; }
+    .sec-ic svg { width: 20px; height: 20px; }
+    .sec-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .sec-t b { color: #123448; font-size: 16px; }
+    .sec-t small { color: #5d717c; font-size: 12.5px; }
+    .sec-chev { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: white; border: 1px solid #dce5ea; flex: none; position: relative; }
+    .sec-chev::after { content: ""; position: absolute; left: 9px; top: 7px; width: 7px; height: 7px; border-right: 2px solid var(--ac);
+                       border-bottom: 2px solid var(--ac); transform: rotate(45deg); transition: transform .15s, top .15s; }
+    details.sec[open] .sec-chev::after { transform: rotate(-135deg); top: 11px; }
+    .sec-body { padding: 18px; overflow-x: auto; }
+    .sec-body .table-wrap { border: 0; padding: 0; margin: 0 0 16px; }
+    .sec-body .sum-grid, .sec-body .ex-grid { margin-bottom: 0; }
+    .sec-body .chips { margin-bottom: 14px; }
+    /* Kartların içi renkli */
+    .sum-grid .sum-card.shared { background: linear-gradient(180deg, #f1f5fb, white 60%); border-top-color: #123448; }
+    .sum-grid .sum-card:nth-child(2) { background: linear-gradient(180deg, #e9f6f4, white 60%); border-top-color: #176c70; }
+    .sum-grid .sum-card:nth-child(3) { background: linear-gradient(180deg, #fff4e5, white 60%); border-top-color: #e59a3c; }
+    .sum-grid .sum-card:nth-child(4) { background: linear-gradient(180deg, #eaf7ef, white 60%); border-top-color: #3c9a6b; }
+    .sum-grid .sum-card.warn { background: linear-gradient(180deg, #ffece8, white 60%); border-top-color: #c4452f; }
+    .ex-card.total { background: linear-gradient(180deg, #e9f6f4, white 55%); }
+    .ex-card.var { background: linear-gradient(180deg, #fff4e5, white 55%); }
+    .ex-card.fix { background: linear-gradient(180deg, #f1f5fb, white 55%); }
+{% endblock %}
+{% block content %}
+  <section class="month-pick" aria-label="Ay seçimi">
+    <div class="mp-head">
+      <b>Ay seçin</b>
+      <nav class="years" aria-label="Yıl">{% for y in years %}<a href="?month={{ y.value }}#ay"{% if y.selected %} class="on" aria-current="true"{% endif %}>{{ y.year|stringformat:"d" }}</a>{% endfor %}</nav>
+    </div>
+    <div class="tabs">{% for t in month_tabs %}{% if t.state == "future" %}<span class="tab future" title="Henüz gelmedi">{{ t.month|date:"F" }}<i>gelecek</i></span>{% else %}<a class="tab {{ t.state }}{% if t.selected %} on{% endif %}" href="?month={{ t.value }}#ay"{% if t.selected %} aria-current="true"{% endif %}>{{ t.month|date:"F" }}<i>{% if t.state == "closed" %}kapandı{% elif t.state == "current" %}devam ediyor{% elif t.state == "complete" %}bitti{% else %}veri yok{% endif %}</i>{% if t.row %}<em class="{% if t.row.result < 0 %}neg{% else %}pos{% endif %}">{% if t.row.result >= 0 %}+{% endif %}{{ t.row.result|tl }} ₺</em>{% endif %}</a>{% endif %}{% endfor %}</div>
+  </section>
+
+  {% with occ=summary.occupancy %}
+  <details class="sec month" id="ay" data-key="month">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v4M16 2v4M3 10h18"/><rect x="3" y="4" width="18" height="18" rx="2"/></svg></span>
+      <span class="sec-t"><b>{{ selected|date:"F Y" }} maliyet özeti</b><small>{% if summary.frozen %}Kapandı · {{ summary.frozen.closed_at|date:"d.m.Y" }} · o ayın fiyatlarıyla{% elif occ and not occ.complete %}Ay devam ediyor · ilk {{ occ.days_counted }} gün{% else %}Güncel kayıtlarla{% endif %}{% if occ %} · doluluk {{ occ.rate|yuzde }}{% endif %}{% if month_result %} · sonuç {% if month_result.result >= 0 %}+{% endif %}{{ month_result.result|tl }} ₺{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+  <section class="sum-grid">
+    <article class="sum-card shared">
+      <div class="k">Otelin sabit giderleri</div>
+      <div class="v">{{ occ.shared_total|default:shared_total|tl }} ₺</div>
+      <p class="d">Oda satılsın satılmasın her ay ödenen giderler: maaşlar, kira, demirbaş amortismanı, elektrik-su-doğalgazın sabit kısmı…{% if occ %}{% if occ.complete %} Bu ay <b>{{ occ.occupied_room_nights|miktar }}</b> oda-gece satıldı; satılan her oda-geceye ortalama <b>{{ occ.monthly_shared_per_sold_night|tl }} ₺</b> düştü.{% else %} Bugüne kadarki dolulukla satılan her oda-geceye ortalama <b>{{ occ.monthly_shared_per_sold_night|tl }} ₺</b> düşüyor.{% endif %}{% endif %}</p>
+      {% if shared_groups %}
+      <div class="parts" role="img" aria-label="Sabit giderin gruplara dağılımı; değerler aşağıda yazılı">{% for g in shared_groups %}<span class="g{{ forloop.counter }}" style="flex:{{ g.amount|floatformat:'0u' }}"></span>{% endfor %}</div>
+      <ul class="glist">{% for g in shared_groups %}<li><i class="g{{ forloop.counter }}"></i><span>{{ g.name }}</span><b>{{ g.amount|tl }} ₺</b><em>{{ g.share|yuzde }}</em></li>{% endfor %}</ul>
+      {% endif %}
+    </article>
+    {% if occ %}
+    <article class="sum-card">
+      <div class="k">Doluluk</div>
+      <div class="v{% if occ.rate < occ.normal_rate %} low{% endif %}">{{ occ.rate|yuzde }}</div>
+      <p class="d">Satılan: <b>{{ occ.occupied_room_nights|miktar }}</b> / {{ occ.available_room_nights|miktar }} oda-gece.</p>
+      <p class="d">Normal doluluk <b>{{ occ.normal_rate|yuzde }}</b>: son 12 ayın ortalaması. Oda maliyetinde her oda tipi kendi normal doluluğuyla hesaplanır (aşağıdaki tabloda).</p>
+    </article>
+    <article class="sum-card">
+      <div class="k">Boş odaların payı</div>
+      <div class="v">{{ occ.idle_capacity_cost|tl }} ₺</div>
+      <p class="d">Sabit giderin satılmayan oda-gecelere düşen kısmı. Otel %100 dolu olsaydı bu tutar da satışla karşılanırdı.</p>
+    </article>
+    {% if month_result %}{% with r=month_result %}
+    <article class="sum-card{% if r.result < 0 %} warn{% endif %}">
+      <div class="k">Satışların toplam gideri karşılaması</div>
+      <div class="v {% if r.result < 0 %}low{% else %}up{% endif %}">{% if r.result >= 0 %}+{% endif %}{{ r.result|tl }} ₺</div>
+      <p class="d">{% if r.result >= 0 %}Bu ay satışlar toplam giderin bu kadar <b>fazlasını</b> karşıladı (kâr).{% else %}Bu ay satışlar toplam gideri <b>karşılamadı</b>; bu kadar açık kaldı (zarar).{% endif %}{% if not r.complete %} İlk {{ r.days_counted }} güne göre.{% endif %}</p>
+      <ul class="glist calc">
+        <li><span>Oda geliri</span><b>{{ r.revenue|tl }} ₺</b></li>
+        <li><span>− Kanal komisyonu</span><b>{{ r.commission|tl }} ₺</b></li>
+        <li><span>− Misafir gelince harcanan</span><b>{{ r.variable|tl }} ₺</b></li>
+        <li><span>− Otelin sabit gideri</span><b>{{ r.shared_total|tl }} ₺</b></li>
+      </ul>
+    </article>
+    {% endwith %}{% endif %}
+    {% endif %}
+  </section>
+    </div>
+  </details>
+
+  {% endwith %}
+
+  {% if example %}
+  <details class="sec room" id="oda-maliyeti" data-key="room">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span>
+      <span class="sec-t"><b>Bir oda bir gece otele kaça mal oluyor?</b><small>{{ example.room_type }}, {{ example.guests }} kişi: {{ example.cost|tl }} ₺</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      <nav class="chips" aria-label="Oda tipi seçimi">{% for t in example_types %}<a href="?month={{ month_value }}&amp;oda={{ t.code }}#oda-maliyeti"{% if t.code == example.code %} class="on" aria-current="true"{% endif %}>{{ t.name }}</a>{% endfor %}</nav>
+    <div class="ex-grid">
+      <article class="ex-card total">
+        <div class="k">{{ example.room_type }} · {{ example.guests }} kişi · 1 gece</div>
+        <div class="v">{{ example.cost|tl }} ₺</div>
+        <p class="d">Bu odayı bir gece satmanın otele toplam maliyeti (KDV hariç, kahvaltı dahil).</p>
+        <div class="parts" role="img" aria-label="Maliyetin {{ example.variable_share|yuzde }} misafir gelince harcanan, {{ example.shared_share|yuzde }} sabit giderlerden düşen pay"><span class="c1" style="flex:{{ example.variable|floatformat:'0u' }}"></span><span class="c6" style="flex:{{ example.shared|floatformat:'0u' }}"></span></div>
+        <ul class="rule">
+          <li><b class="bad">{{ example.variable|tl }} ₺</b><span>altında satılırsa her satış <b>zarar</b> yazar: misafirin harcattığını bile karşılamaz.</span></li>
+          <li><b class="mid">{{ example.variable|tl }} – {{ example.cost|tl }} ₺</b><span>arası <b>katkı</b> sağlar: zarar değil, odanın boş kalmasından iyidir.</span></li>
+          <li><b class="ok">{{ example.cost|tl }} ₺</b><span>üstünde satılırsa bütün giderler karşılanır, <b>kâr</b> başlar.</span></li>
+        </ul>
+      </article>
+      <article class="ex-card var">
+        <div class="k"><i class="c1"></i>Misafir gelince harcanan</div>
+        <div class="v">{{ example.variable|tl }} ₺ <small>{{ example.variable_share|yuzde }}</small></div>
+        <p class="d">Oda satılınca ortaya çıkan giderler. Oda boş kalırsa bu para harcanmaz.</p>
+        {% if example.items %}
+        <ul class="glist">{% for item in example.items %}<li><span>{{ item.name }}</span><b>{{ item.value|tl }} ₺</b></li>{% endfor %}</ul>
+        {% else %}
+        <p class="d">Kahvaltı, buklet ve minibar, çarşaf-havlu yıpranması, elektrik-su gibi giderler. <span class="muted">{{ selected|date:"F" }} kapandığı için kalem kalem tutarları saklanmadı; yalnızca toplam var.</span></p>
+        {% endif %}
+        {% with calc=example.calc %}
+        <details class="how">
+          <summary>Nasıl hesaplandı?</summary>
+          <p>Bu gider iki türlü oluşur: bir kısmı <b>odaya</b> bağlıdır (kaç kişi kalırsa kalsın bir kez), bir kısmı <b>kişiye</b> bağlıdır (her misafirle artar).</p>
+          {% if calc.by_basis %}
+          <ol class="steps">
+            <li><span>Odaya bağlı: yatak takımı, banyo paspası, oda temizliği, elektrik-klima ve bakımın oda payı</span><b>{{ calc.by_basis.room|tl }} ₺</b></li>
+            <li><span>Kişiye bağlı: kahvaltı, buklet, havlu-bornoz, su · {{ calc.by_basis.per_guest|tl }} ₺ × {{ example.guests }} kişi</span><b>{{ calc.by_basis.guest_total|tl }} ₺</b></li>
+            {% if calc.by_basis.stay %}<li><span>Konaklama başına giderlerin bir geceye düşen kısmı</span><b>{{ calc.by_basis.stay|tl }} ₺</b></li>{% endif %}
+            <li class="sum"><span>Toplam, {{ example.guests }} kişi bir gece</span><b>{{ example.variable|tl }} ₺</b></li>
+          </ol>
+          {% endif %}
+          {% if calc.one_guest %}
+          <ol class="steps">
+            <li><span>Oda 1 kişiye satılırsa</span><b>{{ calc.one_guest|tl }} ₺</b></li>
+            {% if calc.extra_guest %}<li><span>İkinci misafirin getirdiği ek gider</span><b>+ {{ calc.extra_guest|tl }} ₺</b></li>{% endif %}
+            <li class="sum"><span>{{ example.guests }} kişi</span><b>{{ example.variable|tl }} ₺</b></li>
+          </ol>
+          {% endif %}
+          <p class="muted">Bu yüzden tutar ikiye bölünüp "kişi başı" denemez. Ürün fiyatları stoktaki ortalama alış maliyetinden, miktarlar kahvaltı büfesi ve oda paketi tanımlarından gelir.</p>
+        </details>
+        {% endwith %}
+      </article>
+      <article class="ex-card fix">
+        <div class="k"><i class="c6"></i>Otelin sabit giderlerinden düşen pay</div>
+        <div class="v">{{ example.shared|tl }} ₺ <small>{{ example.shared_share|yuzde }}</small></div>
+        <p class="d">Maaş, kira, amortisman gibi her ay ödenen giderlerin bu odaya düşen kısmı. Oda boş kalsa da bu gider ödenir.</p>
+        <p class="d">{{ example.room_type }} normalde {{ example.calc.normal|yuzde }} dolu olduğu varsayılarak hesaplanır; büyük ve donanımlı odalar daha fazla pay alır.</p>
+        {% with calc=example.calc %}
+        <details class="how">
+          <summary>Nasıl hesaplandı?</summary>
+          <p>Kaç kişi kalırsa kalsın aynıdır; sabit giderler misafir sayısıyla değişmez.</p>
+          <ol class="steps">
+            <li><span>{{ selected|date:"F" }} ayının sabit giderleri (maaş, kira, amortisman, enerji tabanı…)</span><b>{{ calc.shared_total|tl }} ₺</b></li>
+            <li><span>Ayın oda-gece kapasitesi: {{ calc.rooms }} oda × {{ calc.month_days|floatformat:2 }} gün (yılın ortalama ay uzunluğu, 365 ÷ 12; ay 28 ya da 31 gün çekti diye gecenin maliyeti değişmesin)</span><b>{{ calc.available|floatformat:0 }}</b></li>
+            <li><span>Ortalama bir odanın gecelik payı: {{ calc.shared_total|tl }} ÷ {{ calc.available|floatformat:0 }}</span><b>{{ calc.average|tl }} ₺</b></li>
+            <li><span>{{ example.room_type }} payı: ortalama × {{ calc.factor|yuzde:0 }} (odanın büyüklük ve donanım katsayısı; küçük oda ortalamadan az, büyük oda fazla alır)</span><b>{{ calc.room_share|tl }} ₺</b></li>
+            <li><span>{{ example.room_type }} her gece dolu değil; son 12 ayda {{ calc.normal|yuzde }} dolu (otel ortalaması {{ calc.hotel_normal|yuzde }}). Boş gecelerin payını bu tipin satılan geceleri taşır: {{ calc.room_share|tl }} ÷ {{ calc.normal|yuzde }}</span><b>{{ example.shared|tl }} ₺</b></li>
+          </ol>
+          <p class="muted">Her oda tipi kendi doluluğuyla hesaplanır: az satılan tip, boş gecelerinin bedelini kendi fiyatında taşır. Ay normalden boş ya da dolu geçerse fark oda maliyetini değiştirmez; ayın sonucunda (kâr ya da zarar) görünür.</p>
+        </details>
+        {% endwith %}
+      </article>
+    </div>
+    </div>
+  </details>
+
+  {% endif %}
+
+  <details class="sec types" id="oda-tipleri" data-key="types">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg></span>
+      <span class="sec-t"><b>Oda tipi ve kişi sayısına göre bir gecenin maliyeti</b><small>{{ simple_rows|length }} satır · her oda tipi kendi yıllık doluluk oranıyla</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+    <p class="help" style="margin:4px 0 0">Otelin sabit gideri (maaş, kira, amortisman, enerji tabanı…) bu oda tipinin bir gecesine düşen paydır; odanın yıllık doluluk oranıyla hesaplanır ({{ normal_source }}; otel ortalaması {{ normal|yuzde }}). Ayın dolu ya da boş geçmesi oda maliyetini değiştirmez. Tutarlar bir gecelik.</p>
+    <table style="min-width:760px;margin-top:10px">
+      <thead><tr><th>Oda tipi</th><th>Yıllık doluluk oranı</th><th>Kişi</th><th>Oda satılınca oluşan gider</th><th>Otelin sabit gideri</th><th>Otele maliyeti</th><th>Kişi başı</th></tr></thead>
+      <tbody>{% for row in simple_rows %}<tr>
+        <td class="strong">{% if row.first %}{{ row.room_type }}{% endif %}</td><td>{% if row.first %}{{ row.normal|yuzde }}{% endif %}</td><td>{{ row.guests }} kişi</td><td>{{ row.variable|tl }} ₺</td><td>{{ row.shared|tl }} ₺</td><td class="strong">{{ row.cost|tl }} ₺</td><td>{{ row.per_person|tl }} ₺</td>
+      </tr>{% empty %}<tr><td colspan="7">Satışa açık oda yok.</td></tr>{% endfor %}</tbody>
+    </table>
+    </div>
+  </details>
+
+  <details class="sec year" id="aylar" data-key="year">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+      <span class="sec-t"><b>{{ selected|date:"Y" }} yılının aylara göre özeti</b><small>{% if totals %}{{ totals.count }} ay · {% if totals.profitable %}kârlı{% else %}zararda{% endif %} {% if totals.result >= 0 %}+{% endif %}{{ totals.result|tl }} ₺ · karşılama {{ totals.coverage|yuzde:0 }}{% else %}Bu yıl için ay yok{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+    <p class="help" style="margin:0 0 8px">Ayın sonucu = oda geliri − kanal komisyonu − misafir gelince harcanan − otelin sabit gideri (KDV hariç). Toplam gider = kanal komisyonu + misafir gelince harcanan + otelin sabit gideri. Karşılama oranı = oda geliri ÷ toplam gider (%100'ün üstü kâr, altı zarar).{% if totals.partial %} {{ totals.partial.month|date:"F" }} devam ediyor: bütün sütunlar ayın ilk {{ totals.partial.days_counted }} gününe göre.{% endif %}</p>
+    <table class="months" style="min-width:980px">
+      <thead><tr><th style="text-align:left">Ay</th><th>Durum</th><th>Doluluk</th><th>Otelin sabit gideri</th><th>Satılan oda başına sabit gider</th><th>Boş odaların payı</th><th>Toplam gider</th><th>Oda geliri</th><th>Karşılama oranı</th><th>Ayın sonucu</th></tr></thead>
+      <tbody>{% for row in overview %}<tr{% if row.month == selected %} class="typehead"{% endif %}>
+        <td style="text-align:left"><a href="?month={{ row.month|date:'Y-m' }}#ay">{{ row.month|date:"F" }}</a>{% for line in row.one_off %}<span class="oneoff" title="{{ line.description }}">Tek seferlik: {{ line.name }} {{ line.fixed|tl }} ₺</span>{% endfor %}</td>
+        <td>{% if row.closed %}<span class="badge normal">Kapandı</span>{% elif row.complete %}<span class="badge neutral">Bitti</span>{% else %}<span class="badge critical">Devam ediyor · {{ row.days_counted }} gün</span>{% endif %}</td>
+        <td>{{ row.rate|yuzde }}</td>
+        <td{% if row.one_off %} class="hi"{% endif %}>{{ row.shared_total|tl }} ₺</td>
+        <td>{% if row.shared_per_sold_night %}{{ row.shared_per_sold_night|tl }} ₺{% else %}—{% endif %}</td>
+        <td>{% if row.idle_cost is not None %}{{ row.idle_cost|tl }} ₺{% else %}—{% endif %}</td>
+        <td>{{ row.total_cost|tl }} ₺</td>
+        <td>{{ row.revenue|tl }} ₺</td>
+        <td class="{% if row.coverage < 1 %}neg{% else %}pos{% endif %}">{{ row.coverage|yuzde:0 }}</td>
+        <td class="strong {% if row.result < 0 %}neg{% else %}pos{% endif %}">{% if row.result >= 0 %}+{% endif %}{{ row.result|tl }} ₺</td>
+      </tr>{% empty %}<tr><td colspan="10" style="text-align:center;color:#687d88;padding:22px">Bu yıl için ay yok.</td></tr>{% endfor %}</tbody>
+      {% if totals %}<tfoot><tr class="total">
+        <td style="text-align:left">Toplam · {{ totals.count }} ay</td><td></td>
+        <td>{{ totals.rate|yuzde }}</td>
+        <td>{{ totals.shared_total|tl }} ₺</td>
+        <td>{{ totals.shared_per_sold_night|tl }} ₺</td>
+        <td>{{ totals.idle_cost|tl }} ₺</td>
+        <td>{{ totals.total_cost|tl }} ₺</td>
+        <td>{{ totals.revenue|tl }} ₺</td>
+        <td class="{% if totals.coverage < 1 %}neg{% else %}pos{% endif %}">{{ totals.coverage|yuzde:0 }}</td>
+        <td class="{% if totals.result < 0 %}neg{% else %}pos{% endif %}">{% if totals.result >= 0 %}+{% endif %}{{ totals.result|tl }} ₺</td>
+      </tr>
+      <tr class="verdict {% if totals.profitable %}good{% else %}bad{% endif %}"><td colspan="10">
+        <b>{{ totals.first|date:"F" }}–{{ totals.last|date:"F Y" }}: otel {% if totals.profitable %}KÂRLI{% else %}ZARARDA{% endif %} ({% if totals.result >= 0 %}+{% endif %}{{ totals.result|tl }} ₺).</b>
+        {{ totals.profit_months }} ay kâr, {{ totals.loss_months }} ay zarar. Oda geliri {{ totals.revenue|tl }} ₺; bundan {{ totals.commission|tl }} ₺ kanal komisyonu, {{ totals.variable|tl }} ₺ misafir gelince harcanan ve {{ totals.shared_total|tl }} ₺ sabit gider düşüldü.
+        En iyi ay {{ totals.best.month|date:"F" }} ({% if totals.best.result >= 0 %}+{% endif %}{{ totals.best.result|tl }} ₺), en zayıf ay {{ totals.worst.month|date:"F" }} ({% if totals.worst.result >= 0 %}+{% endif %}{{ totals.worst.result|tl }} ₺).
+        Toplam gider {{ totals.total_cost|tl }} ₺, karşılama oranı {{ totals.coverage|yuzde:0 }}.{% if totals.one_off %} Sabit gidere {{ totals.one_off|tl }} ₺ tek seferlik tadilat gideri dahil.{% endif %}
+      </td></tr></tfoot>{% endif %}
+    </table>
+    </div>
+  </details>
+
+  <details class="sec detail" id="dokum" data-key="detail">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5h11M9 12h11M9 19h11"/><circle cx="4" cy="5" r="1"/><circle cx="4" cy="12" r="1"/><circle cx="4" cy="19" r="1"/></svg></span>
+      <span class="sec-t"><b>Ayrıntılı döküm</b><small>Aylık gider kalemleri ve oda satılınca oluşan giderin kırılımı</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+  {% if not summary.frozen %}
+  <section class="table-wrap">
+    <strong>Oda satılınca oluşan giderin kalemleri</strong>
+    <table class="dense" style="min-width:760px;margin-top:10px">
+      <thead><tr><th>Kişi sayısı</th><th>Kahvaltı (gıda)</th><th>Restoran sarfı</th><th>Buklet ve sarf</th><th>Tekstil</th><th>Enerji ve bakım</th><th>Toplam</th></tr></thead>
+      <tbody>{% regroup summary.rows by room_type as type_groups %}{% for type_group in type_groups %}
+      <tr class="typehead"><td colspan="7">{{ type_group.grouper }} · {{ type_group.list.0.room_count }} oda</td></tr>
+      {% for row in type_group.list %}<tr>
+        <td class="strong">{{ row.guests }} kişi</td><td>{{ row.breakfast|tl }} ₺</td><td>{{ row.restaurant|tl }} ₺</td><td>{{ row.amenities|tl }} ₺</td>
+        <td>{{ row.textile|tl }} ₺</td><td>{{ row.variable_overhead|tl }} ₺</td><td class="strong">{{ row.variable|tl }} ₺</td>
+      </tr>{% endfor %}{% empty %}<tr><td colspan="7" style="text-align:center;color:#687d88;padding:22px">Satışa açık oda yok.</td></tr>{% endfor %}</tbody>
+    </table>
+  </section>
+  {% endif %}
+
+  <section class="table-wrap">
+    <strong>Aylık giderler (gruplara göre)</strong>
+    <table style="min-width:760px;margin-top:10px">
+      <thead><tr><th>Grup / gider kalemi</th><th>Davranış</th><th>Aylık sabit tutar</th><th>Değişken birim tutar</th></tr></thead>
+      <tbody>
+        {% for group in summary.expense_groups %}
+        <tr><td class="strong">{{ group.name }}</td><td></td><td class="strong">{{ group.fixed|tl }} ₺</td>
+          <td class="strong">{% if group.variable_room %}{{ group.variable_room|floatformat:2 }} ₺ / oda-gece{% endif %}{% if group.variable_room and group.variable_guest %} + {% endif %}{% if group.variable_guest %}{{ group.variable_guest|floatformat:2 }} ₺ / kişi-gece{% endif %}{% if group.variable_stay %}{% if group.variable_room or group.variable_guest %} + {% endif %}{{ group.variable_stay|floatformat:2 }} ₺ / konaklama{% endif %}{% if not group.variable_room and not group.variable_guest and not group.variable_stay %}—{% endif %}</td></tr>
+          {% for item in group.lines %}
+          <tr><td style="padding-left:26px;color:#536873">{{ item.name }}</td><td style="color:#536873">{{ item.behavior }}</td><td style="color:#536873">{{ item.fixed|tl }} ₺</td>
+            <td style="color:#536873">{% if item.variable_rate %}{{ item.variable_rate|floatformat:2 }} ₺ / {{ item.basis }}{% else %}—{% endif %}</td></tr>
+          {% endfor %}
+        {% empty %}<tr><td colspan="4" style="text-align:center;color:#687d88;padding:22px">Bu ay için gider kaydı yok.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+    </div>
+  </details>
+
+  <script>
+    // Açılır kartlar (v86): sayfa açıldığında hepsi KAPALI gelir; önceki açık/kapalı durumu hatırlanmaz.
+    // Yalnız bir ay, yıl ya da oda tipi seçilerek gelindiğinde (adresteki #işaret) ilgili kart açılır.
+    (function () {
+      try {                                                    // eski sürümün hatırladığı durumları temizle
+        Object.keys(window.localStorage).forEach(function (key) {
+          if (key.indexOf("maliyet-kart-") === 0) { window.localStorage.removeItem(key); }
+        });
+      } catch (e) {}
+      var id = location.hash ? decodeURIComponent(location.hash.slice(1)) : "";
+      var target = id && document.getElementById(id);
+      if (target && target.tagName === "DETAILS") { target.open = true; target.scrollIntoView({ block: "start" }); }
+    })();
+  </script>
+{% endblock %}

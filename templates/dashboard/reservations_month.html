@@ -1,0 +1,27 @@
+{% load sayilar %}
+<div class="mo-sum">{% for item in summary %}{% if item.count %}<span class="{{ item.key }}">{{ item.label }}: {{ item.count }} · kâr {{ item.profit|tl }} ₺</span>{% endif %}{% endfor %}</div>
+<p class="small" style="margin:0 0 8px">{{ rows|length }} / {{ total_count }} rezervasyon · kâr = satış − komisyon − tam maliyet</p>
+<div class="table-wrap" style="padding:0;border:0;margin:0">
+<table class="res">
+  <thead><tr>
+    <th class="left">Tarih</th><th class="left">Oda</th><th class="left">Kanal</th>
+    <th>Satış</th><th>Komisyon</th><th>Tam maliyet</th><th>Kâr</th><th class="left">Durum</th>
+  </tr></thead>
+  <tbody>
+  {% for row in rows %}
+    <tr class="{{ row.status }}">
+      <td class="left nowrap"><b>{{ row.stay.check_in|date:"j M" }} – {{ row.stay.check_out|date:"j M" }}</b><div class="small">{{ row.nights }} gece</div></td>
+      <td class="left nowrap">{{ row.stay.room.room_number }} · {{ row.room_type.name }}<div class="small">{{ row.stay.guests }} kişi · {{ row.stay.room.get_view_type_display|lower }}</div></td>
+      <td class="left">{{ row.stay.channel.name|default:"—" }}{% if row.stay.notes and row.stay.notes != "Örnek veri (rezervasyon simülasyonu)" %}<div class="small">{{ row.stay.notes }}</div>{% endif %}</td>
+      <td><b>{{ row.total|tl }} ₺</b></td>
+      <td>{% if row.commission %}−{{ row.commission|tl }} ₺{% else %}—{% endif %}</td>
+      <td>{{ row.full_cost|tl }} ₺</td>
+      <td class="{% if row.profit >= 0 %}up{% else %}down{% endif %}">{{ row.profit|tl }} ₺</td>
+      <td class="left"><span class="pill {{ row.status }}"{% if row.causes %} title="{{ row.causes|join:' · ' }}"{% endif %}>{{ row.status_label }}</span></td>
+    </tr>
+  {% empty %}
+    <tr><td colspan="8" class="left">Bu ayda bu durumda rezervasyon yok.</td></tr>
+  {% endfor %}
+  </tbody>
+</table>
+</div>

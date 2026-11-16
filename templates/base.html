@@ -1,0 +1,134 @@
+{% load static %}<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Ana Sayfa{% endblock %} | Pasaport Pier</title>
+  {# Ortak stil tek yerde durur; sayfalar yalnızca kendi içeriğini tanımlar. #}
+  <style>
+    :root { font-family: Inter, "Segoe UI", sans-serif; color: #173142; background: #f2f6f8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; }
+    /* Yerleşim: solda sabit menü, sağda sayfa içeriği. Bütün ekranlar bu düzeni paylaşır. */
+    .layout { display: flex; min-height: 100vh; }
+    aside.side { width: 264px; flex: 0 0 264px; background: #102a3a; color: #e6eef2; display: flex; flex-direction: column;
+                 position: sticky; top: 0; height: 100vh; overflow-y: auto; }
+    .brand { padding: 26px 20px 22px; text-align: center; border-bottom: 1px solid #ffffff1a; }
+    .brand img { width: 84px; height: 84px; display: block; margin: 0 auto 12px; }
+    .brand .name { font-size: 19px; font-weight: 700; letter-spacing: .02em; color: white; }
+    .brand .sub { font-size: 11px; letter-spacing: .16em; text-transform: uppercase; color: #e59a3c; margin-top: 4px; }
+    nav.menu { padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; }
+    nav.menu .group { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: #8fa9b6; margin: 14px 12px 6px; }
+    nav.menu .group:first-child { margin-top: 2px; }
+    nav.menu a { display: block; padding: 12px 14px; border-radius: 10px; color: #e6eef2; text-decoration: none;
+                 font-size: 15px; font-weight: 600; border-left: 4px solid transparent; transition: background .12s; }
+    nav.menu a:hover { background: #ffffff14; color: white; }
+    nav.menu a.current { background: #ffffff1f; color: white; border-left-color: #e59a3c; }
+    nav.menu a.admin { margin-top: 10px; border: 1px solid #e59a3c80; color: #f3c58e; }
+    nav.menu a.admin:hover { background: #e59a3c26; color: white; }
+    .side-foot { margin-top: auto; padding: 16px 20px 20px; border-top: 1px solid #ffffff1a; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .side-foot .user { font-size: 13px; color: #b5c8d2; }
+    .side-foot button { font: inherit; font-size: 13px; font-weight: 600; color: #102a3a; background: #e6eef2; border: 0; border-radius: 8px; padding: 7px 12px; cursor: pointer; }
+    .page { flex: 1; min-width: 0; }
+    header.top { background: linear-gradient(115deg, #123448, #176c70); color: white; padding: 22px 32px; }
+    header.top small { color: #b8e6df; letter-spacing: .14em; text-transform: uppercase; }
+    header.top h1 { font-size: 26px; margin: 0; }
+    header.top p { color: #d2e3e8; margin: 6px 0 0; max-width: 760px; line-height: 1.6; }
+    header.top .solo-brand { display: flex; align-items: center; gap: 14px; margin-bottom: 14px; font-weight: 700; font-size: 18px; }
+    header.top .solo-brand img { width: 52px; height: 52px; }
+    @media (max-width: 900px) {
+      .layout { flex-direction: column; }
+      aside.side { width: auto; flex: none; position: static; height: auto; }
+      nav.menu { flex-direction: row; flex-wrap: wrap; }
+      nav.menu .group { display: none; }
+      nav.menu a { padding: 9px 12px; font-size: 14px; }
+      nav.menu a.admin { margin-top: 0; }
+    }
+    main.wrap { max-width: 1320px; margin: 0 auto; padding: 24px 32px 40px; }
+    .panel, .table-wrap { background: white; border: 1px solid #e3eaee; border-radius: 14px; padding: 20px; margin-bottom: 16px; }
+    .panel p, .help { color: #637783; line-height: 1.6; }
+    .help { font-size: 13px; }
+    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .card { background: white; border: 1px solid #e3eaee; border-radius: 14px; padding: 18px; }
+    .card .label { font-size: 13px; color: #637783; }
+    .card .value { font-size: 24px; font-weight: 700; margin-top: 8px; color: #123448; }
+    .card .sub { font-size: 12px; color: #788991; margin-top: 6px; }
+    .card.warn { border-color: #f0c9bf; background: #fff8f6; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid #e9eef1; text-align: right; white-space: nowrap; }
+    th { font-size: 12px; color: #637783; font-weight: 600; }
+    th:first-child, td:first-child { text-align: left; }
+    td.strong { font-weight: 700; color: #123448; }
+    .field { display: grid; gap: 6px; }
+    .field label { font-size: 13px; color: #627985; font-weight: 600; }
+    .field input, .field select { width: 100%; padding: 10px 12px; border: 1px solid #cbd7dd; border-radius: 8px; background: white; font: inherit; }
+    .button { padding: 11px 18px; background: #126c72; color: white; border: 0; border-radius: 8px; font: inherit; font-weight: 600; cursor: pointer; }
+    .errorlist { color: #a33725; font-size: 13px; margin: 0; padding-left: 18px; }
+    .badge { display: inline-block; border-radius: 99px; padding: 5px 10px; font-size: 12px; font-weight: 700; }
+    .badge.critical { background: #fff0ed; color: #a33725; }
+    .badge.normal { background: #e8f5ee; color: #256847; }
+    .badge.neutral { background: #eef2f4; color: #536873; }
+    .flash { border-radius: 10px; padding: 13px 16px; margin-bottom: 16px; font-weight: 600; background: #e8f5ee; color: #256847; }
+    .flash.error { background: #fff0ed; color: #a33725; }
+    .alert-box { border: 1px solid #f0c9bf; background: #fff8f6; border-left: 5px solid #c4452f; border-radius: 12px; padding: 16px 18px; margin-bottom: 18px; }
+    .alert-box h2 { margin: 0 0 6px; font-size: 18px; color: #a33725; }
+    .alert-group { display: flex; gap: 14px; align-items: center; justify-content: space-between; flex-wrap: wrap; border-top: 1px solid #f3dcd5; padding: 10px 0; }
+    .alert-group:first-of-type { border-top: 0; }
+    .alert-group ul { margin: 4px 0 0; padding-left: 18px; color: #5b3a33; font-size: 13px; line-height: 1.6; }
+    .button.small { padding: 7px 12px; font-size: 13px; text-decoration: none; display: inline-block; }
+    .button.secondary { background: #e7eef1; color: #123448; }
+    .button.danger { background: #fff0ed; color: #a33725; }
+    tr.critical-row td { background: #fff6f3; }
+    .notice { border-radius: 10px; background: #eef6f5; padding: 13px; color: #355b61; font-size: 13px; line-height: 1.5; }
+    .foot { margin: 24px 0 8px; color: #72848d; font-size: 12px; }
+    {% block extra_css %}{% endblock %}
+  </style>
+</head>
+<body>
+<div class="layout">
+  {% if user.is_authenticated %}
+  {% with current=request.resolver_match.url_name %}
+  <aside class="side">
+    <a class="brand" href="{% url 'home' %}" style="display:block;text-decoration:none">
+      <img src="{% static 'img/pasaport-pier-logo.png' %}" alt="Pasaport Pier Hotel logosu">
+      <div class="name">Pasaport Pier Hotel</div>
+      <div class="sub">Maliyet ve fiyat paneli</div>
+    </a>
+    <nav class="menu" aria-label="Ana menü">
+      <a href="{% url 'home' %}" {% if current == 'home' %}class="current" aria-current="page"{% endif %}>Ana Sayfa</a>
+      <a href="{% url 'reservation_cost' %}" {% if current == 'reservation_cost' %}class="current" aria-current="page"{% endif %}>Rezervasyon</a>
+      <div class="group">Maliyet</div>
+      <a href="{% url 'cost_report' %}" {% if current == 'cost_report' %}class="current" aria-current="page"{% endif %}>Maliyet analizi</a>
+      <div class="group">Fiyat ve satış</div>
+      <a href="{% url 'price_calendar' %}" {% if current == 'price_calendar' %}class="current" aria-current="page"{% endif %}>Fiyat takvimi</a>
+      <a href="{% url 'reservations' %}" {% if current == 'reservations' %}class="current" aria-current="page"{% endif %}>Rezervasyonlar</a>
+      <div class="group">Stok</div>
+      <a href="{% url 'stock_analysis' %}" {% if current == 'stock_analysis' %}class="current" aria-current="page"{% endif %}>Stok analizi</a>
+      <a href="{% url 'order_list' %}" {% if current == 'order_list' or current == 'order_create' %}class="current" aria-current="page"{% endif %}>Siparişler</a>
+      {% if user.is_staff %}<a class="admin" href="{% url 'admin:index' %}">Admin paneli</a>{% endif %}
+    </nav>
+    <div class="side-foot">
+      <span class="user">{{ user.get_username }}</span>
+      {# Django 5'te çıkış güvenlik nedeniyle yalnızca POST ile yapılır. #}
+      <form method="post" action="{% url 'logout' %}">{% csrf_token %}<button type="submit">Çıkış</button></form>
+    </div>
+  </aside>
+  {% endwith %}
+  {% endif %}
+  <div class="page">
+    <header class="top">
+      {% if not user.is_authenticated %}
+      <div class="solo-brand"><img src="{% static 'img/pasaport-pier-logo.png' %}" alt="">Pasaport Pier Hotel</div>
+      {% endif %}
+      <h1>{% block heading %}Ana Sayfa{% endblock %}</h1>
+      {% block lead %}{% endblock %}
+    </header>
+    <main class="wrap">
+      {% for message in messages %}<div class="flash {{ message.tags }}" role="status">{{ message }}</div>{% endfor %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+</div>
+</body>
+</html>

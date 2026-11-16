@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% load sayilar l10n %}
+{% block title %}Siparişler{% endblock %}
+{% block heading %}Siparişler{% endblock %}
+{% block content %}
+  <p class="help" style="margin-top:0">Mal gelince <b>Teslim al</b>: kalemler stoğa girer. Yeni sipariş: <a href="{% url 'stock_analysis' %}">Stok analizi</a>.</p>
+  {% for order in orders %}
+  <section class="panel">
+    <div style="display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;align-items:center">
+      <div><strong>Sipariş #{{ order.pk|unlocalize }} · {{ order.supplier.name }}</strong><br>
+        <span class="help">{{ order.ordered_at|date:"d.m.Y H:i" }} · {{ order.get_status_display }}{% if order.delivered_at %} · teslim {{ order.delivered_at|date:"d.m.Y H:i" }}{% endif %}{% if order.notes %} · {{ order.notes }}{% endif %}</span></div>
+      {% if order.status == Status.OPEN %}
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        {% if order.supplier.email %}<a class="button small secondary" href="mailto:{{ order.supplier.email }}?subject={{ 'Sipariş #'|urlencode }}{{ order.pk|unlocalize }}&body={% for line in order.lines.all %}{{ line.item.name|urlencode }}%3A%20{{ line.quantity|girdi }}%20{{ line.item.unit }}%0A{% endfor %}">E-postayla gönder</a>{% endif %}
+        <form method="post" action="{% url 'order_receive' order.pk %}">{% csrf_token %}<button class="button small" type="submit">Teslim al</button></form>
+        <form method="post" action="{% url 'order_cancel' order.pk %}">{% csrf_token %}<button class="button small danger" type="submit">İptal</button></form>
+      </div>
+      {% elif order.status == Status.DELIVERED %}<span class="badge normal">Teslim alındı</span>
+      {% else %}<span class="badge critical">İptal</span>{% endif %}
+    </div>
+    <table style="margin-top:12px">
+      <thead><tr><th style="text-align:left">Ürün</th><th>Miktar</th><th>Birim fiyat</th><th>Tutar</th></tr></thead>
+      <tbody>{% for line in order.lines.all %}<tr><td style="text-align:left">{{ line.item.sku }} · {{ line.item.name }}</td><td>{{ line.quantity|miktar }} {{ line.item.unit }}</td><td>{{ line.unit_price|floatformat:2 }} ₺</td><td>{{ line.total|floatformat:2 }} ₺</td></tr>{% endfor %}
+      <tr class="grand"><td style="text-align:left"><b>Toplam (KDV hariç)</b></td><td></td><td></td><td><b>{{ order.total|floatformat:2 }} ₺</b></td></tr></tbody>
+    </table>
+  </section>
+  {% empty %}
+  <section class="panel"><p style="margin:0;color:#687d88">Henüz sipariş yok.</p></section>
+  {% endfor %}
+{% endblock %}

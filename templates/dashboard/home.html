@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load sayilar %}
+{% block title %}Ana Sayfa{% endblock %}
+{% block lead %}<p>{{ summary.today|date:"j F Y, l" }} · otelin genel özeti</p>{% endblock %}
+{% block extra_css %}
+  /* Ana sayfa: üç özet kartı; kartın tamamı ilgili ekrana götüren bir bağlantıdır. */
+  .overview { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; }
+  @media (max-width: 1100px) { .overview { grid-template-columns: 1fr; } }
+  a.ov { --accent: #176c70; --tint: #e9f5f4; display: flex; flex-direction: column; background: white; color: inherit;
+         text-decoration: none; border: 1px solid #e3eaee; border-top: 5px solid var(--accent); border-radius: 16px;
+         padding: 22px 22px 18px; transition: transform .12s, box-shadow .12s, border-color .12s; }
+  a.ov:hover, a.ov:focus-visible { transform: translateY(-3px); box-shadow: 0 12px 28px #12344824; border-color: var(--accent); }
+  a.ov:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  a.ov.sales { --accent: #d4862c; --tint: #fdf3e6; }
+  a.ov.stock { --accent: #2f5f8a; --tint: #eaf1f8; }
+  .ov-head { display: flex; align-items: center; gap: 12px; }
+  .ov-icon { width: 44px; height: 44px; border-radius: 12px; background: var(--tint); color: var(--accent);
+             display: grid; place-items: center; flex: none; }
+  .ov-icon svg { width: 24px; height: 24px; }
+  .ov-head h2 { margin: 0; font-size: 19px; color: #123448; }
+  .ov-head .period { font-size: 13px; color: #6b7f89; margin-top: 2px; }
+  .ov-main { margin: 20px 0 6px; }
+  .ov-main .label { font-size: 13px; color: #637783; }
+  .ov-main .big { font-size: 30px; font-weight: 750; color: #123448; margin-top: 4px; letter-spacing: -.01em; }
+  .ov-main .note { font-size: 13px; color: #6b7f89; margin-top: 4px; }
+  .ov-list { list-style: none; margin: 14px 0 0; padding: 0; border-top: 1px solid #edf1f3; }
+  .ov-list li { display: flex; justify-content: space-between; gap: 12px; padding: 11px 0; border-bottom: 1px solid #edf1f3; font-size: 14px; }
+  .ov-list li span:first-child { color: #637783; }
+  .ov-list li span:last-child { font-weight: 650; color: #123448; text-align: right; font-variant-numeric: tabular-nums; }
+  .ov-list .bad { color: #a33725 !important; }
+  .ov-list .ok { color: #256847 !important; }
+  .ov-flag { margin-top: 14px; border-radius: 10px; padding: 10px 12px; font-size: 13px; line-height: 1.5; background: #fff6ec; color: #8a4b0f; }
+  .ov-flag.bad { background: #fff0ed; color: #a33725; }
+  .ov-go { margin-top: auto; padding-top: 18px; font-weight: 650; font-size: 14px; color: var(--accent); }
+  a.ov:hover .ov-go span { margin-left: 4px; }
+  .ov-go span { transition: margin .12s; }
+{% endblock %}
+{% block content %}
+  {% if not database_ready %}
+  <div class="notice" style="margin-bottom:16px">Veritabanı tabloları henüz hazır değil. Kurulum için <code>python manage.py veritabanlarini_kur</code> komutunu çalıştırın.</div>
+  {% else %}
+  {% with c=summary.cost s=summary.sales k=summary.stock %}
+  <section class="overview" aria-label="Genel özet">
+
+    <a class="ov cost" href="{% url 'cost_report' %}">
+      <div class="ov-head">
+        <div class="ov-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg></div>
+        <div><h2>Maliyet</h2><div class="period">{{ c.month|date:"F Y" }} · son tamamlanan ay</div></div>
+      </div>
+      <div class="ov-main">
+        <div class="label">Bir oda-gecenin tam maliyeti (2 kişi)</div>
+        <div class="big">{{ c.min_cost|tl }} – {{ c.max_cost|tl }} ₺</div>
+        <div class="note">{{ c.min_type }} → {{ c.max_type }}</div>
+      </div>
+      <ul class="ov-list">
+        <li><span>Aylık sabit gider</span><span>{{ c.shared_total|tl }} ₺</span></li>
+        <li><span>Doluluk / normal doluluk</span><span{% if c.below_normal %} class="bad"{% endif %}>{{ c.occupancy|yuzde }} / {{ c.normal|yuzde }}</span></li>
+        <li><span>Boş odaların maliyeti</span><span>{{ c.idle_cost|tl }} ₺</span></li>
+      </ul>
+      <div class="ov-go">Maliyet analizine git <span>→</span></div>
+    </a>
+
+    <a class="ov sales" href="{% url 'price_calendar' %}">
+      <div class="ov-head">
+        <div class="ov-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg></div>
+        <div><h2>Fiyat ve satış</h2><div class="period">{{ s.month|date:"F Y" }} · içinde bulunulan ay</div></div>
+      </div>
+      <div class="ov-main">
+        <div class="label">Bu ayın oda geliri (onaylı rezervasyonlar, KDV hariç)</div>
+        <div class="big">{{ s.revenue|tl }} ₺</div>
+        <div class="note">Kanal komisyonu {{ s.commission|tl }} ₺</div>
+      </div>
+      <ul class="ov-list">
+        <li><span>Bugün dolu oda</span><span>{{ s.occupied_today }} / {{ s.rooms }}</span></li>
+        <li><span>Bu ay doluluk (bugüne kadar)</span><span>{{ s.occupancy|yuzde }}</span></li>
+        <li><span>Ortalama gecelik fiyat (ADR)</span><span>{{ s.adr|tl }} ₺</span></li>
+        {% if s.closed_month %}<li><span>{{ s.closed_month|date:"F" }} sonucu</span><span class="{% if s.closed_result < 0 %}bad{% else %}ok{% endif %}">{{ s.closed_result|tl }} ₺</span></li>{% endif %}
+      </ul>
+      <div class="ov-go">Fiyat takvimine git <span>→</span></div>
+    </a>
+
+    <a class="ov stock" href="{% url 'stock_analysis' %}">
+      <div class="ov-head">
+        <div class="ov-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8"/><path d="M12 13v8"/></svg></div>
+        <div><h2>Stok</h2><div class="period">{{ k.products }} ürün · bugün</div></div>
+      </div>
+      <div class="ov-main">
+        <div class="label">Toplam stok değeri</div>
+        <div class="big">{{ k.value|tl }} ₺</div>
+        <div class="note">Hareketli ağırlıklı ortalama maliyetle</div>
+      </div>
+      <ul class="ov-list">
+        <li><span>Kritik seviyedeki ürün</span><span{% if k.critical %} class="bad"{% endif %}>{{ k.critical }}</span></li>
+        <li><span>Açık sipariş</span><span>{{ k.open_orders }}</span></li>
+        <li><span>Son gün sonu</span><span{% if k.days_behind > 1 %} class="bad"{% endif %}>{{ k.last_closed_day|date:"d.m.Y"|default:"—" }}</span></li>
+      </ul>
+      {% if k.days_behind > 1 %}<div class="ov-flag bad">Gün sonu {{ k.days_behind }} gecedir çalıştırılmadı; stok miktarları geride.</div>{% endif %}
+      <div class="ov-go">Stok analizine git <span>→</span></div>
+    </a>
+
+  </section>
+  {% endwith %}
+  {% endif %}
+{% endblock %}

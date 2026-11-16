@@ -1,0 +1,344 @@
+{% extends "base.html" %}
+{% load sayilar %}
+{% block title %}Rezervasyon{% endblock %}
+{% block heading %}Rezervasyon{% endblock %}
+{% block extra_css %}
+    /* v83: form tasarımı — solda alt alta hizalı renkli form kartı, sağda sonuçlar */
+    .rez-layout { display: grid; grid-template-columns: minmax(300px, 380px) minmax(0, 1fr); gap: 22px; align-items: start; }
+    @media (max-width: 1100px) { .rez-layout { grid-template-columns: minmax(0, 1fr); } .rez-form { position: static; max-width: 640px; } }
+    .rez-form { position: sticky; top: 18px; background: white; border: 1px solid #e3eaee; border-radius: 18px; overflow: hidden;
+                box-shadow: 0 10px 28px #12344814; }
+    .rez-head { background: linear-gradient(135deg, #176c70 0%, #123448 100%); color: white; padding: 18px 20px; }
+    .rez-head h2 { margin: 0; font-size: 18px; color: white; }
+    .rez-head p { margin: 4px 0 0; font-size: 13px; color: #cfe7e4; line-height: 1.45; }
+    .rez-body { padding: 18px 20px 20px; display: grid; gap: 14px; }
+    .rez-group { --ac: #176c70; --tint: #e9f5f4; border-radius: 14px; background: var(--tint); padding: 14px; display: grid; gap: 12px;
+                 border-left: 4px solid var(--ac); }
+    .rez-group.sale { --ac: #6b5ca5; --tint: #f0edf8; }
+    .rez-group-title { font-size: 11.5px; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--ac); }
+    .rez-field { display: grid; gap: 6px; }
+    .rez-field label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700; color: #123448; }
+    .rez-ic { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; flex: none; color: white; background: var(--ic, #176c70); }
+    .rez-ic svg { width: 14px; height: 14px; }
+    .rez-field input, .rez-field select { width: 100%; box-sizing: border-box; height: 46px; padding: 0 14px; border: 1.5px solid #d3dee4;
+               border-radius: 11px; background: white; font: inherit; font-size: 15px; color: #123448; transition: border-color .15s, box-shadow .15s; }
+    .rez-field input:focus, .rez-field select:focus { outline: none; border-color: var(--ac); box-shadow: 0 0 0 3px #17647030; }
+    .rez-group.sale .rez-field input:focus, .rez-group.sale .rez-field select:focus { box-shadow: 0 0 0 3px #6b5ca530; }
+    .rez-field .help-text { font-size: 12px; color: #637783; }
+    .rez-field .errorlist, .rez-errors .errorlist { list-style: none; margin: 2px 0 0; padding: 8px 10px; border-radius: 9px; background: #fde8e8;
+               color: #9c1f1f; font-size: 12.5px; font-weight: 600; }
+    .rez-field.has-error input, .rez-field.has-error select { border-color: #c62828; }
+    .rez-nights { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-radius: 11px; padding: 10px 14px;
+                  background: white; border: 1.5px dashed #9fcfcb; color: #176c70; font-weight: 700; font-size: 14px; }
+    .rez-nights span { color: #637783; font-weight: 500; font-size: 12.5px; }
+    .rez-submit { width: 100%; height: 50px; border: 0; border-radius: 12px; cursor: pointer; font: inherit; font-size: 15.5px; font-weight: 800;
+                  color: white; background: linear-gradient(135deg, #e59a3c 0%, #d4862c 100%); box-shadow: 0 8px 18px #d4862c40;
+                  transition: transform .12s, box-shadow .12s; }
+    .rez-submit:hover { transform: translateY(-1px); box-shadow: 0 10px 22px #d4862c55; }
+    .rez-submit:focus-visible { outline: 3px solid #123448; outline-offset: 2px; }
+    /* v85: sonuçlar açılır renkli kartlar */
+    details.sec { --ac: #176c70; --tint: #e9f5f4; background: white; border: 1px solid #e3eaee; border-left: 5px solid var(--ac);
+                  border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+    details.sec.ok { --ac: #0ca30c; --tint: #eef8ee; } details.sec.low { --ac: #f0a500; --tint: #fff8e6; }
+    details.sec.warn { --ac: #e0670f; --tint: #fdf0e3; } details.sec.bad { --ac: #c62828; --tint: #fdeeee; }
+    details.sec.price { --ac: #d4862c; --tint: #fdf3e6; } details.sec.nights { --ac: #2f5f8a; --tint: #eaf1f8; }
+    details.sec.sales { --ac: #6b5ca5; --tint: #f0edf8; } details.sec.engine { --ac: #176c70; --tint: #e9f5f4; }
+    details.sec.cost { --ac: #5d717c; --tint: #eef2f4; }
+    details.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 14px; padding: 14px 18px; transition: background .12s; }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary:hover, details.sec[open] > summary { background: var(--tint); }
+    details.sec[open] > summary { border-bottom: 1px solid #e3eaee; }
+    details.sec > summary:focus-visible { outline: 3px solid var(--ac); outline-offset: -3px; }
+    .sec-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; background: var(--ac); color: white; }
+    .sec-ic svg { width: 20px; height: 20px; }
+    .sec-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .sec-t b { color: #123448; font-size: 16px; }
+    .sec-t small { color: #5d717c; font-size: 12.5px; }
+    .sec-chev { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: white; border: 1px solid #dce5ea; flex: none; position: relative; }
+    .sec-chev::after { content: ""; position: absolute; left: 9px; top: 7px; width: 7px; height: 7px; border-right: 2px solid var(--ac);
+                       border-bottom: 2px solid var(--ac); transform: rotate(45deg); transition: transform .15s, top .15s; }
+    details.sec[open] .sec-chev::after { transform: rotate(-135deg); top: 11px; }
+    .sec-body { padding: 16px 18px 18px; }
+    .sec-body > .table-wrap { padding: 0; border: 0; margin: 0; }
+    .info-note { border-radius: 12px; padding: 10px 14px; margin-bottom: 14px; background: #fdeeee; color: #9c1f1f; font-size: 13.5px; line-height: 1.5; border: 1px dashed #e6a3a3; }
+    .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-bottom: 14px; }
+    .kpi { border-radius: 12px; padding: 12px 14px; background: linear-gradient(180deg, var(--tint), white 75%); border: 1px solid #e3eaee; }
+    .kpi .label { font-size: 12px; color: #637783; } .kpi .value { font-size: 21px; font-weight: 800; color: #123448; margin-top: 3px; }
+    .kpi .sub { font-size: 12px; color: #637783; margin-top: 2px; }
+    .kpi.pos .value { color: #1d6a1d; } .kpi.neg .value { color: #a33725; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 4px 0 12px; }
+    .chip-ch { border-radius: 99px; padding: 4px 10px; font-size: 12px; font-weight: 700; background: var(--tint); color: #123448; border: 1px solid #e3eaee; }
+    .rez-results { min-width: 0; }
+    .rez-results tr.discount td:first-child, .rez-results tr.lift td:first-child, .rez-results tr.grand td:first-child { white-space: normal; line-height: 1.45; }
+    .rez-results tr.discount td:last-child, .rez-results tr.lift td:last-child, .rez-results tr.grand td:last-child { vertical-align: top; }
+    .rez-empty { border-radius: 18px; border: 2px dashed #c9d8df; background: linear-gradient(180deg, #f6fafb, white); padding: 34px 26px; text-align: center; color: #536873; }
+    .rez-empty h3 { margin: 10px 0 6px; color: #123448; font-size: 18px; }
+    .rez-empty .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin-top: 18px; text-align: left; }
+    .rez-empty .step { border-radius: 12px; padding: 12px; background: white; border: 1px solid #e3eaee; font-size: 13px; line-height: 1.45; }
+    .rez-empty .step b { display: block; color: #123448; margin-bottom: 2px; }
+    tr.grand td { font-weight: 800; color: #123448; font-size: 16px; }
+    tr.discount td { color: #8a3f08; }
+    tr.lift td { color: #256847; font-weight: 600; }
+    td.note { text-align: left; white-space: normal; color: #637783; font-size: 13px; }
+    .verdict { border-radius: 12px; padding: 14px 16px; margin-top: 16px; line-height: 1.6; border-left: 5px solid #c9d5db; background: #f3f6f8; }
+    .verdict.good { background: #eef8ee; border-left-color: #0ca30c; }
+    .verdict.warning { background: #fff7e3; border-left-color: #fab219; }
+    .verdict.serious { background: #fde3cc; border-left-color: #e0670f; }
+    .verdict.critical { background: #f9dcdc; border-left-color: #c62828; }
+    details.more > summary { cursor: pointer; font-weight: 700; color: #123448; }
+    /* v82: müsaitlik */
+    .select-channel { min-width: 220px; }
+    .avail-panel.bad { border-left: 5px solid #c62828; }
+    .avail-title { font-size: 18px; color: #9c1f1f; margin: 0; }
+    .avail-nights { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+    .an { display: inline-flex; flex-direction: column; border-radius: 10px; padding: 6px 10px; background: #eef8ee; color: #1d5a1d; font-size: 12px; }
+    .an b { color: #123448; font-size: 12.5px; }
+    .an.low { background: #fff8e6; color: #7a5600; } .an.full { background: #f9dcdc; color: #9c1f1f; }
+    h3.sub { font-size: 14px; color: #123448; margin: 16px 0 8px; }
+    .alt-dates { display: flex; flex-wrap: wrap; gap: 8px; }
+    .muted { color: #637783; font-weight: 400; }
+    .st { font-size: 12px; font-weight: 800; border-radius: 99px; padding: 3px 9px; color: white; white-space: nowrap; }
+    .st.good { background: #0ca30c; } .st.warning { background: #c98a00; } .st.serious { background: #e0670f; } .st.critical { background: #c62828; }
+    .avail-bar { border-radius: 12px; padding: 12px 16px; margin-bottom: 16px; line-height: 1.55; border-left: 5px solid; }
+    .avail-bar.ok { background: #eef8ee; border-color: #0ca30c; color: #1d5a1d; }
+    .avail-bar.low { background: #fff8e6; border-color: #f0a500; color: #7a5600; }
+    .avail-bar.warn { background: #fde3cc; border-color: #e0670f; color: #8a3f08; }
+{% endblock %}
+{% block content %}
+  <div class="rez-layout">
+  <form class="rez-form" method="get" novalidate>
+    <div class="rez-head"><h2>Rezervasyon teklifi</h2><p>Bilgileri girin; sistem önce müsaitliğe, sonra fiyata ve kâra bakar.</p></div>
+    <div class="rez-body">
+      <div class="rez-group">
+        <div class="rez-group-title">Konaklama</div>
+        <div class="rez-field{% if form.room_type.errors %} has-error{% endif %}"><label for="id_room_type"><span class="rez-ic" style="--ic:#176c70" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18M7 9V6h10v3"/></svg></span>Oda tipi</label>{{ form.room_type }}{{ form.room_type.errors }}</div>
+        <div class="rez-field{% if form.guests.errors %} has-error{% endif %}"><label for="id_guests"><span class="rez-ic" style="--ic:#2f5f8a" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><path d="M16 11a3 3 0 1 0 0-6M21 20a5 5 0 0 0-4-4.9"/></svg></span>Misafir sayısı</label>{{ form.guests }}{{ form.guests.errors }}</div>
+        <div class="rez-field{% if form.check_in.errors %} has-error{% endif %}"><label for="id_check_in"><span class="rez-ic" style="--ic:#3c9a6b" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M10 15l2 2 4-4"/></svg></span>Giriş tarihi</label>{{ form.check_in }}{{ form.check_in.errors }}</div>
+        <div class="rez-field{% if form.check_out.errors %} has-error{% endif %}"><label for="id_check_out"><span class="rez-ic" style="--ic:#c4452f" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18M9 15h6"/></svg></span>Çıkış tarihi</label>{{ form.check_out }}{{ form.check_out.errors }}</div>
+        <div class="rez-nights" id="rez-nights" aria-live="polite">— gece <span>giriş ve çıkış tarihine göre</span></div>
+      </div>
+      <div class="rez-group sale">
+        <div class="rez-group-title">Satış</div>
+        <div class="rez-field{% if form.channel.errors %} has-error{% endif %}"><label for="id_channel"><span class="rez-ic" style="--ic:#6b5ca5" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-6 9 6v11H3z"/><path d="M9 20v-6h6v6"/></svg></span>Satış kanalı</label>{{ form.channel }}{{ form.channel.errors }}</div>
+      </div>
+      {% if form.non_field_errors %}<div class="rez-errors">{{ form.non_field_errors }}</div>{% endif %}
+      <button class="rez-submit" type="submit">Müsaitlik ve fiyatı hesapla</button>
+    </div>
+  </form>
+  <div class="rez-results">
+  {% if not form.is_bound %}
+  <section class="rez-empty">
+    <svg width="46" height="46" viewBox="0 0 24 24" fill="none" stroke="#176c70" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
+    <h3>Teklif hazırlamak için formu doldurun</h3>
+    <p style="margin:0">Oda tipi, misafir sayısı ve tarihleri seçip <b>Müsaitlik ve fiyatı hesapla</b> düğmesine basın.</p>
+    <div class="steps">
+      <div class="step"><b>1 · Müsaitlik</b>Seçilen oda tipinde bütün geceler boyunca boş oda var mı?</div>
+      <div class="step"><b>2 · Fiyat</b>Gece gece fiyat: talep, özel günler, indirimler ve satış kanalı.</div>
+      <div class="step"><b>3 · Kâr</b>Otele kalan tutar maliyeti ve hedef kârı karşılıyor mu?</div>
+    </div>
+  </section>
+  {% endif %}
+  {% with d=form.cleaned_data %}
+  {% if availability %}
+  <details class="sec {% if not availability.available %}bad{% elif availability.status == 'room_change' %}warn{% elif availability.last_rooms %}low{% else %}ok{% endif %}" data-key="avail" open>
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V8l9-5 9 5v13"/><path d="M9 21v-6h6v6"/></svg></span>
+      <span class="sec-t"><b>Müsaitlik · {{ d.room_type.name }}</b><small>{% if availability.status == 'no_rooms' %}Satışa kapalı: aktif oda yok{% elif not availability.available %}Dolu · {{ availability.full_nights|length }} gecede boş oda yok{% elif availability.status == 'room_change' %}Oda değişikliğiyle mümkün{% else %}Müsait · {{ availability.free_count }} / {{ availability.rooms_total }} oda boş{% if availability.last_rooms %} · son odalar{% endif %}{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      {% if availability.status == "no_rooms" %}<p class="help" style="margin-top:0">Bu oda tipinde satışa açık (aktif) oda yok; bakımdaki odalar satılamaz.</p>
+      {% elif not availability.available %}<p class="help" style="margin-top:0"><b>{{ availability.full_nights|length }} gece {{ availability.rooms_total }} odanın hepsi satılmış.</b> Bu tarihlerde yeni rezervasyon alınamaz. Fiyat ve kâr aşağıda bilgi amaçlı gösterilir.</p>
+      {% elif availability.status == "room_change" %}<p class="help" style="margin-top:0"><b>Oda değişikliği gerekir:</b> her gece boş oda var ama hiçbir oda bütün geceler boyunca boş değil; misafir konaklama sırasında oda değiştirir.</p>
+      {% else %}<p class="help" style="margin-top:0">Bütün geceler boyunca boş odalar: <b>{{ availability.free_rooms|join:", " }}</b>.{% if availability.last_rooms %} <b>Son {{ availability.free_count }} oda.</b>{% endif %}</p>{% endif %}
+      {% if availability.per_night %}<div class="avail-nights">{% for n in availability.per_night %}<span class="an {% if not n.free %}full{% elif n.free <= 2 %}low{% endif %}"><b>{{ n.date|date:"j M D" }}</b>{{ n.free }} / {{ n.total }} boş</span>{% endfor %}</div>{% endif %}
+      {% if not availability.available %}
+        {% if alternatives.room_types %}
+        <h3 class="sub">Aynı tarihlerde boş oda tipleri ({{ d.guests }} kişi, {{ d.channel.name }})</h3>
+        <div class="table-wrap" style="padding:0;border:0;margin:0"><table>
+          <thead><tr><th>Oda tipi</th><th>Boş oda</th><th>Konaklama fiyatı</th><th>Otele kalan</th><th>Sonuç</th><th></th></tr></thead>
+          <tbody>{% for a in alternatives.room_types %}<tr>
+            <td>{{ a.room_type.name }}</td><td>{{ a.free_count }}</td><td>{{ a.total|tl }} ₺</td><td>{{ a.net|tl }} ₺</td>
+            <td><span class="st {{ a.status }}">{{ a.status_label }}</span></td>
+            <td><a class="button small secondary" href="?room_type={{ a.room_type.pk }}&guests={{ d.guests }}&check_in={{ d.check_in|date:'Y-m-d' }}&check_out={{ d.check_out|date:'Y-m-d' }}&channel={{ d.channel.pk }}">Bu tiple hesapla</a></td>
+          </tr>{% endfor %}</tbody></table></div>
+        {% elif availability.status != "no_rooms" %}<p class="help">Bu tarihlerde {{ d.guests }} kişi alabilen başka boş oda tipi de yok.</p>{% endif %}
+        {% if alternatives.dates %}
+        <h3 class="sub">{{ d.room_type.name }} için en yakın boş tarihler ({{ availability.per_night|length }} gece)</h3>
+        <div class="alt-dates">{% for a in alternatives.dates %}<a class="button small secondary" href="?room_type={{ d.room_type.pk }}&guests={{ d.guests }}&check_in={{ a.check_in|date:'Y-m-d' }}&check_out={{ a.check_out|date:'Y-m-d' }}&channel={{ d.channel.pk }}">{{ a.check_in|date:"j M" }} – {{ a.check_out|date:"j M" }} <span class="muted">({% if a.shift > 0 %}+{% endif %}{{ a.shift }} gün · {{ a.free_count }} oda)</span></a>{% endfor %}</div>
+        {% elif availability.status != "no_rooms" %}<p class="help">±14 gün içinde aynı süre için bu tipte boş tarih yok.</p>{% endif %}
+      {% endif %}
+    </div>
+  </details>
+  {% endif %}
+
+  {% if price and price.missing_rate %}
+  <section class="panel"><div class="notice">Bu tarihler için oda tipinin temel fiyatı girilmemiş (Admin paneli › Temel fiyatlar).</div></section>
+  {% elif price %}
+  <details class="sec price" data-key="price" open>
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L3 13V3h10l7.6 7.6a2 2 0 0 1 0 2.8z"/><circle cx="7.5" cy="7.5" r="1.5"/></svg></span>
+      <span class="sec-t"><b>Fiyat ve kâr{% if not availability.available %} · bilgi amaçlı{% endif %}</b><small>{{ price.total|tl }} ₺ · {{ price.status_label }}{% if price.channel %} · {{ price.channel.name }}{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      {% if not availability.available %}<div class="info-note"><b>Bu oda bu tarihlerde satılamaz.</b> Aşağıdaki fiyat ve kâr, bir oda boş olsaydı bugün verilecek teklifi gösterir; personel kontrolü ve karşılaştırma içindir.</div>{% endif %}
+      <div class="kpis">
+        <div class="kpi"><div class="label">Konaklama fiyatı (KDV hariç)</div><div class="value">{{ price.total|tl }} ₺</div><div class="sub">{{ price.nights }} gece · gecelik {{ price.per_night|tl }} ₺</div></div>
+        <div class="kpi"><div class="label">Misafirin ödeyeceği</div><div class="value">{{ price.guest_total|tl }} ₺</div><div class="sub">KDV ve konaklama vergisi dahil</div></div>
+        <div class="kpi"><div class="label">Otele kalan</div><div class="value">{{ price.net|tl }} ₺</div><div class="sub">{% if price.commission %}{{ price.channel.name }} komisyonu düşülmüş{% else %}komisyonsuz{% endif %}</div></div>
+        <div class="kpi {% if price.profit >= 0 %}pos{% else %}neg{% endif %}"><div class="label">Kâr</div><div class="value">{{ price.profit|tl }} ₺</div><div class="sub">Tam maliyet {{ price.full_cost|tl }} ₺</div></div>
+      </div>
+      <div class="verdict {{ price.status }}" style="margin-top:0"><b>{{ price.status_label }}.</b> {{ price.status_text }} Hedef fiyat {{ price.target|tl }} ₺.</div>
+    </div>
+  </details>
+
+  <details class="sec nights" data-key="nights" open>
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="17" rx="2"/><path d="M8 2v4M16 2v4M3 10h18"/></svg></span>
+      <span class="sec-t"><b>Gece gece fiyat</b><small>{{ price.nights }} gece{% if price.special_nights %} · {{ price.special_nights }} özel gece, indirimsiz{% endif %}{% if price.discount_total %} · indirim {{ price.discount_total|tl }} ₺{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      <div class="table-wrap">
+      <table>
+        <thead><tr><th>Gece</th><th style="text-align:left">Etki</th><th style="text-align:left">Doluluk</th><th>Gece fiyatı</th></tr></thead>
+        <tbody>
+        {% for row in price.rows %}
+          <tr>
+            <td>{{ row.date|date:"j F l" }}</td>
+            <td class="note">{% if row.event %}{{ row.event.name }} {{ row.event.change_label }}{% elif row.weekday %}{{ row.weekday.get_weekday_display }} {{ row.weekday.change_label }}{% else %}—{% endif %}</td>
+            <td class="note">{% if row.event.is_decision %}otel kararı{% elif row.occupancy is not None %}otel {{ row.occupancy|yuzde:0 }}{% if row.engine.type_occupancy is not None %} · oda tipi {{ row.engine.type_occupancy|yuzde:0 }}{% endif %}{% if row.engine.occupancy_basis == "oda tipi" %} <b>(fiyat oda tipine göre)</b>{% elif row.occupancy_change %} ({{ row.occupancy_change }}){% endif %}{% else %}—{% endif %}</td>
+            <td class="strong">{{ row.price|tl }} ₺</td>
+          </tr>
+        {% endfor %}
+          {% if price.special_nights %}<tr class="lift"><td colspan="4">Özel gün: {{ price.special_nights }} gecede ({{ price.special_subtotal|tl }} ₺) hiçbir indirim uygulanmaz{% if price.special_nights < price.nights %}; erken rezervasyon ve konaklama süresi indirimi yalnız diğer gecelere uygulanır{% endif %}.</td></tr>{% endif %}
+          {% if price.early_rate %}<tr class="discount"><td colspan="3">Erken rezervasyon indirimi {{ price.early_rate|yuzde:0 }}{% if price.special_nights %} (özel geceler hariç){% endif %}</td><td>−{{ price.early_amount|tl }} ₺</td></tr>{% endif %}
+          {% if price.length_rate %}<tr class="discount"><td colspan="3">Konaklama süresi indirimi {{ price.length_rate|yuzde:0 }}{% if price.special_nights %} (özel geceler hariç){% endif %}</td><td>−{{ price.length_amount|tl }} ₺</td></tr>{% endif %}
+          {% if price.floor_lift %}<tr class="lift"><td colspan="3">{% if price.protected %}Kâr koruması: bu oda tipi en az tam maliyet + {{ price.min_markup|yuzde:0 }} kârla satılır; indirim{% if price.commission %} ve komisyon{% endif %} sonrası otele kalan tutar bunun altına inmez{% else %}Alt sınır: indirimler fiyatı gecelerin alt sınırı toplamının ({{ price.floor_total|tl }} ₺) altına indiremez{% endif %}</td><td>+{{ price.floor_lift|tl }} ₺</td></tr>{% endif %}
+          {% if price.commission %}<tr class="discount"><td colspan="3">{{ price.channel.name }} komisyonu {{ price.commission_rate|yuzde:0 }}</td><td>−{{ price.commission|tl }} ₺</td></tr>{% endif %}
+          <tr class="grand"><td colspan="3">Otele kalan (KDV hariç)</td><td>{{ price.net|tl }} ₺</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+  {% endif %}
+
+  {% if sales %}
+  <details class="sec sales" data-key="sales"{% if not availability.available %} open{% endif %}>
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 6-6"/></svg></span>
+      <span class="sec-t"><b>Bu gecelerde yapılmış satışlar · {{ d.room_type.name }}</b><small>{{ sales.sold }} / {{ sales.capacity }} oda-gece satılmış{% if sales.adr %} · ort. {{ sales.adr|tl }} ₺{% endif %}{% if sales.profit is not None %} · kâr {{ sales.profit|tl }} ₺{% endif %}</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      {% if sales.sold %}
+      <div class="kpis">
+        <div class="kpi"><div class="label">Satılan oda-gece ({{ d.room_type.name }})</div><div class="value">{{ sales.sold }} / {{ sales.capacity }}</div><div class="sub">doluluk {{ sales.type_rate|yuzde:0 }} · otel geneli {{ sales.hotel_rate|yuzde:0 }}</div></div>
+        <div class="kpi"><div class="label">Ortalama satış fiyatı</div><div class="value">{% if sales.adr %}{{ sales.adr|tl }} ₺{% else %}—{% endif %}</div><div class="sub">gece başına, KDV hariç</div></div>
+        <div class="kpi"><div class="label">Gelir · otele kalan</div><div class="value">{{ sales.net|tl }} ₺</div><div class="sub">gelir {{ sales.revenue|tl }} ₺ · komisyon {{ sales.commission|tl }} ₺</div></div>
+        <div class="kpi {% if sales.profit >= 0 %}pos{% else %}neg{% endif %}"><div class="label">Tahmini kâr</div><div class="value">{{ sales.profit|tl }} ₺</div><div class="sub">tam maliyet {{ sales.cost|tl }} ₺{% if sales.margin is not None %} · marj {{ sales.margin|yuzde:0 }}{% endif %}</div></div>
+      </div>
+      {% if sales.channels %}<div class="chips">{% for name, count in sales.channels %}<span class="chip-ch">{{ name }} · {{ count }} oda-gece</span>{% endfor %}</div>{% endif %}
+      <div class="table-wrap" style="padding:0;border:0;margin:0"><table>
+        <thead><tr><th>Gece</th><th>{{ d.room_type.name }} satılan</th><th>Ortalama fiyat</th><th>Otele kalan</th><th>Kâr</th><th>Otel doluluğu</th></tr></thead>
+        <tbody>{% for n in sales.rows %}<tr>
+          <td>{{ n.date|date:"j F l" }}</td><td>{{ n.type_sold }} / {{ sales.type_rooms }}</td>
+          <td>{% if n.adr %}{{ n.adr|tl }} ₺{% else %}—{% endif %}</td><td>{{ n.net|tl }} ₺</td>
+          <td class="{% if n.profit is not None and n.profit < 0 %}neg{% endif %}">{% if n.profit is not None %}{{ n.profit|tl }} ₺{% else %}—{% endif %}</td>
+          <td>{{ n.hotel_sold }} / {{ sales.hotel_rooms }} ({{ n.hotel_rate|yuzde:0 }})</td>
+        </tr>{% endfor %}</tbody></table></div>
+      {% else %}<p class="help" style="margin:0">Bu gecelerde {{ d.room_type.name }} tipinde henüz satılmış oda yok. Otel geneli: {{ sales.hotel_sold }} oda-gece ({{ sales.hotel_rate|yuzde:0 }}).</p>{% endif %}
+    </div>
+  </details>
+  {% endif %}
+  {% endwith %}
+
+  {% if price and not price.missing_rate %}
+  <details class="sec engine" data-key="engine">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></svg></span>
+      <span class="sec-t"><b>Fiyat nasıl oluştu?</b><small>Çapa, talep, indirimler ve alt sınır, gece gece</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      <p class="help" style="margin:8px 0">Her gece: <b>çapa</b> = maliyetten hedef fiyat ile piyasa fiyatının düşüğü → × <b>talep</b> (etkinlik / hafta günü × anlık doluluk). <b>Son dakika</b> ({{ price.rules.last_minute_days }} gün ya da daha az kala, o gecenin doluluğu {{ price.rules.last_minute_occupancy|yuzde:0 }} altında ise) otel boş kalmasın diye fiyat ayrıca {{ price.rules.last_minute_discount|yuzde:0 }} indirilir. <b>Alt sınır</b>: normalde tam maliyet; son dakikada misafir gelince harcananın {{ price.rules.last_minute_markup|yuzde:0 }} fazlası. Talep, otelin ya da oda tipinin doluluğundan hangisi yüksekse ona göre ölçülür. 3. ve 4. kişinin ek ücreti sabittir, çarpanlarla artmaz. Otel kararı olan gecede karar son sözdür. <b>Özel günlerde</b> (bayram, resmi tatil, Sevgililer Günü, yılbaşı) hiçbir indirim uygulanmaz: son dakika, doluluk, kampanya, erken rezervasyon ve uzun konaklama indirimi yoktur; fiyat yalnız artabilir.{% if price.protected %} <b>Kâr koruması</b>: bu oda tipi büyük / lüks oda grubunda; hiçbir gün (son dakika ve otel kararı dahil) tam maliyet + {{ price.min_markup|yuzde:0 }} altına satılmaz.{% endif %}</p>
+      <div class="table-wrap" style="padding:0;border:0;margin:0">
+      <table>
+        <thead><tr><th>Gece</th><th>Maliyetten hedef</th><th>Piyasa fiyatı</th><th style="text-align:left">Çapa</th><th>Talep</th><th>Alt sınır</th><th>Gece fiyatı</th></tr></thead>
+        <tbody>{% for row in price.rows %}{% with e=row.engine %}<tr>
+          <td>{{ row.date|date:"j F" }}</td>
+          <td>{{ e.target|tl }} ₺</td>
+          <td>{{ e.market|tl }} ₺</td>
+          <td class="note">{% if e.decision %}otel kararı{% else %}{{ e.anchor_label }}{% endif %}</td>
+          <td>× {{ e.demand|floatformat:2 }}{% if e.special %} <span class="note">(özel gün, indirimsiz)</span>{% endif %}{% if e.occupancy_basis == "oda tipi" %} <span class="note">(oda tipi {{ e.type_occupancy|yuzde:0 }} dolu)</span>{% endif %}{% if e.extra_guest %} <span class="note">+ ek kişi {{ e.extra_guest|tl }} ₺ sabit</span>{% endif %}{% if e.last_minute %} <span class="note">(son dakika −{{ price.rules.last_minute_discount|yuzde:0 }})</span>{% endif %}</td>
+          <td>{% if e.decision and not e.protected %}—{% else %}{{ e.floor|tl }} ₺ <span class="note">({{ e.floor_kind }}){% if e.floor_applied %} · uygulandı{% endif %}</span>{% endif %}</td>
+          <td class="strong">{{ e.price|tl }} ₺</td>
+        </tr>{% if e.warning %}<tr class="discount"><td colspan="7">{{ e.warning }}</td></tr>{% endif %}{% endwith %}{% endfor %}</tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+  {% endif %}
+  {% if quote and price.shared_cost is not None %}
+  <details class="sec cost" data-key="cost">
+    <summary>
+      <span class="sec-ic" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h16M4 17h10"/></svg></span>
+      <span class="sec-t"><b>Maliyet ayrıntısı</b><small>Tam maliyet {{ price.full_cost|tl }} ₺ · misafir gelince harcanan {{ price.variable_cost|tl }} ₺</small></span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+    <div class="table-wrap"><table>
+      <thead><tr><th>Maliyet kalemi</th><th>Konaklama toplamı</th></tr></thead>
+      <tbody>
+        <tr><td>Kahvaltı (gıda)</td><td>{{ quote.totals.breakfast|tl }} ₺</td></tr>
+        <tr><td>Restoran sarfı</td><td>{{ quote.totals.restaurant|tl }} ₺</td></tr>
+        <tr><td>Buklet, minibar ve oda sarfı</td><td>{{ quote.totals.amenities|tl }} ₺</td></tr>
+        <tr><td>Tekstil yıpranması</td><td>{{ quote.totals.textile|tl }} ₺</td></tr>
+        <tr><td>Enerji ve bakımın değişken kısmı</td><td>{{ quote.totals.variable_overhead|tl }} ₺</td></tr>
+        {% if quote.totals.per_stay %}<tr><td>Konaklama başına giderler</td><td>{{ quote.totals.per_stay|tl }} ₺</td></tr>{% endif %}
+        {% if price.shared_cost is not None %}<tr><td>Otelin sabit giderinden düşen pay (odanın yıllık doluluğu {{ price.normal_occupancy|yuzde:0 }})</td><td>{{ price.shared_cost|tl }} ₺</td></tr>
+        <tr class="grand"><td>Tam maliyet</td><td>{{ price.full_cost|tl }} ₺</td></tr>{% endif %}
+      </tbody>
+    </table></div>
+    </div>
+  </details>
+  {% endif %}
+  </div>
+  </div>
+  <script>
+    (function () {
+      var store = null;
+      try { store = window.localStorage; store.getItem("rez-kart"); } catch (e) { store = null; }
+      document.querySelectorAll("details.sec[data-key]").forEach(function (el) {
+        var key = "rez-kart-" + el.dataset.key;
+        if (el.dataset.key === "avail" || el.dataset.key === "price") { return; }      // bu ikisi her zaman açık başlar
+        if (store) { try { var v = store.getItem(key); if (v === "1") { el.open = true; } else if (v === "0") { el.open = false; } } catch (e) {} }
+        el.addEventListener("toggle", function () { if (store) { try { store.setItem(key, el.open ? "1" : "0"); } catch (e) {} } });
+      });
+    })();
+  </script>
+  <script>
+    (function () {
+      var a = document.getElementById("id_check_in"), b = document.getElementById("id_check_out"), out = document.getElementById("rez-nights");
+      if (!a || !b || !out) { return; }
+      function fmt(d) { return d.toLocaleDateString("tr-TR", {day: "numeric", month: "short"}); }
+      function update() {
+        var x = new Date(a.value), y = new Date(b.value), n = Math.round((y - x) / 86400000);
+        out.style.color = "";
+        if (!a.value || !b.value || isNaN(n)) { out.innerHTML = "— gece <span>giriş ve çıkış tarihine göre</span>"; return; }
+        if (n <= 0) { out.textContent = "Çıkış tarihi girişten sonra olmalı"; out.style.color = "#9c1f1f"; return; }
+        out.innerHTML = n + " gece <span>" + fmt(x) + " → " + fmt(y) + "</span>";
+      }
+      a.addEventListener("change", function () {
+        if (a.value && (!b.value || new Date(b.value) <= new Date(a.value))) {
+          var next = new Date(a.value); next.setDate(next.getDate() + 1); b.value = next.toISOString().slice(0, 10);
+        }
+        update();
+      });
+      b.addEventListener("change", update);
+      update();
+    })();
+  </script>
+{% endblock %}

@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% load sayilar %}
+{% block title %}Sipariş Ver{% endblock %}
+{% block heading %}Sipariş ver · {{ supplier.name }}{% endblock %}
+{% block content %}
+  <section class="panel">
+    <p class="help" style="margin-top:0">Önerilen miktar stoğu 3 × kritik seviyeye tamamlar; fiyat son alım fiyatıdır. Miktarı 0 olan ürün siparişe girmez.</p>
+    {% if supplier.phone or supplier.email %}<p class="help">İletişim: {{ supplier.phone }}{% if supplier.phone and supplier.email %} · {% endif %}{{ supplier.email }}</p>{% endif %}
+    {% if errors %}<div class="flash error">{% for error in errors %}{{ error }}<br>{% endfor %}</div>{% endif %}
+    <form method="post">{% csrf_token %}
+      {% if groups.main %}
+      <div class="table-wrap" style="padding:0;box-shadow:none">
+      <table style="min-width:820px">
+        <thead><tr><th style="text-align:left">Ürün</th><th>Mevcut</th><th>Kritik</th><th>Siparişte</th><th>Sipariş miktarı</th><th>Birim fiyat (₺)</th></tr></thead>
+        <tbody>{% for row in groups.main %}{% include "dashboard/_order_row.html" %}{% endfor %}</tbody>
+      </table>
+      </div>
+      {% elif has_rows %}
+      <div class="notice">Bu tedarikçinin kritik seviyede ürünü yok. Sipariş vermek istediğiniz ürünü aşağıdaki listeden seçip miktarını yazın.</div>
+      {% else %}
+      <div class="notice">Bu tedarikçiye bağlı aktif ürün yok.</div>
+      {% endif %}
+      {% if groups.others %}
+      <details style="margin-top:14px"{% if not groups.main %} open{% endif %}>
+        <summary style="cursor:pointer;font-weight:600;color:#126c72">Bu tedarikçinin diğer ürünleri ({{ groups.others|length }})</summary>
+        <div class="table-wrap" style="padding:0;box-shadow:none;margin-top:10px">
+        <table style="min-width:820px">
+          <thead><tr><th style="text-align:left">Ürün</th><th>Mevcut</th><th>Kritik</th><th>Siparişte</th><th>Sipariş miktarı</th><th>Birim fiyat (₺)</th></tr></thead>
+          <tbody>{% for row in groups.others %}{% include "dashboard/_order_row.html" %}{% endfor %}</tbody>
+        </table>
+        </div>
+      </details>
+      {% endif %}
+      <div class="field" style="margin-top:14px"><label for="aciklama">Açıklama (isteğe bağlı)</label><input id="aciklama" name="aciklama" maxlength="240"></div>
+      <button class="button" type="submit" style="margin-top:14px">Siparişi oluştur</button>
+      <a class="button secondary" href="{% url 'stock_analysis' %}" style="margin-left:8px;text-decoration:none">Vazgeç</a>
+    </form>
+  </section>
+{% endblock %}

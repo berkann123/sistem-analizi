@@ -1,0 +1,20 @@
+# Gizli ayarlar ve yerel veritabanları
+.env
+db.sqlite3
+*.sqlite3
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+
+# Yerel yedekler ve geçici klasörler
+_yedek/
+outputs/
+work/
+
+# Editör / işletim sistemi
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store

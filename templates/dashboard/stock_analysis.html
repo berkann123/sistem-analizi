@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load sayilar l10n %}
+{% block title %}Stok Analizi{% endblock %}
+{% block heading %}Stok analizi{% endblock %}
+{% block extra_css %}
+    /* v94: başlıklara göre açılır kartlar */
+    details.sec { --ac: #176c70; background: white; border: 1px solid #e3eaee; border-left: 5px solid var(--ac);
+                  border-radius: 16px; margin-bottom: 14px; overflow: hidden; }
+    details.sec > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 14px; padding: 14px 18px;
+                            transition: background .12s; }
+    details.sec > summary::-webkit-details-marker { display: none; }
+    details.sec > summary:hover, details.sec[open] > summary { background: #f4f8fa; }
+    details.sec[open] > summary { border-bottom: 1px solid #e3eaee; }
+    details.sec > summary:focus-visible { outline: 3px solid var(--ac); outline-offset: -3px; }
+    .sec-ic { width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex: none; background: var(--ac); color: white; }
+    .sec-ic svg { width: 20px; height: 20px; }
+    .sec-t { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+    .sec-t b { color: #123448; font-size: 16px; } .sec-t small { color: #5d717c; font-size: 12.5px; }
+    .sec-chev { margin-left: auto; width: 28px; height: 28px; border-radius: 50%; background: white; border: 1px solid #dce5ea; flex: none; position: relative; }
+    .sec-chev::after { content: ""; position: absolute; left: 9px; top: 7px; width: 7px; height: 7px; border-right: 2px solid var(--ac);
+                       border-bottom: 2px solid var(--ac); transform: rotate(45deg); transition: transform .15s, top .15s; }
+    details.sec[open] .sec-chev::after { transform: rotate(-135deg); top: 11px; }
+    .sec-body { padding: 14px 18px 18px; }
+    /* v95: stok durumu — kırmızı (tükendi), koyu turuncu (kritik), yeşil (yeterli) */
+    .pills { margin-left: auto; display: flex; gap: 6px; flex: none; }
+    .pills + .sec-chev { margin-left: 8px; }
+    .pill-out, .pill-low { font-size: 12px; font-weight: 800; color: white; border-radius: 99px; padding: 3px 10px; }
+    .pill-out { background: #dc2626; } .pill-low { background: #ea580c; }
+    .st-btn { display: inline-block; white-space: nowrap; text-decoration: none; font-size: 12.5px; font-weight: 800; border-radius: 99px;
+              padding: 6px 12px; color: white; border: 2px solid transparent; transition: filter .12s, transform .12s; }
+    .st-btn:hover { filter: brightness(1.08); transform: translateY(-1px); }
+    .st-btn.out { background: #dc2626; box-shadow: 0 3px 10px #dc262640; }
+    .st-btn.low { background: #ea580c; box-shadow: 0 3px 10px #ea580c40; }
+    .st-btn.low.ordered { background: white; color: #c2410c; border-color: #ea580c; box-shadow: none; }
+    .st-btn.ok { background: #16a34a; }
+    tr.row-out td { background: #fef2f2; } tr.row-out td:first-child { box-shadow: inset 5px 0 #dc2626; }
+    tr.row-low td { background: #fff7ed; } tr.row-low td:first-child { box-shadow: inset 5px 0 #ea580c; }
+    tr.row-ok td:first-child { box-shadow: inset 5px 0 #16a34a; }
+    .card.st-card.out { border-top: 5px solid #dc2626; } .card.st-card.out .value { color: #b91c1c; }
+    .card.st-card.low { border-top: 5px solid #ea580c; } .card.st-card.low .value { color: #c2410c; }
+{% endblock %}
+{% block content %}
+  {% if summary.alerts %}
+  <section class="alert-box" role="alert">
+    <h2>{{ summary.critical_count }} ürün kritik stok seviyesinde ya da altında</h2>
+    {% for group in summary.alerts %}
+    <div class="alert-group">
+      <div>
+        <strong>{{ group.supplier|default:"Tedarikçisi tanımlı değil" }}</strong>
+        <ul>{% for item in group.items %}
+          <li>{{ item.name }}: {{ item.quantity|miktar }} {{ item.unit }} (kritik {{ item.critical_level|miktar }} {{ item.unit }}){% if item.on_order %} · <b>siparişte {{ item.on_order|miktar }} {{ item.unit }}</b>{% endif %}</li>
+        {% endfor %}</ul>
+      </div>
+      {% if group.supplier_id %}
+        <a class="button small{% if not group.needs_order %} secondary{% endif %}" href="{% url 'order_create' group.supplier_id %}">{% if group.needs_order %}Sipariş ver{% else %}Yeni sipariş{% endif %}</a>
+      {% else %}
+        <span class="help">Önce Admin paneli → Envanter ürünleri ekranından tedarikçi seçin.</span>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </section>
+  {% else %}
+  <div class="notice" style="margin-bottom:16px" role="status">Kritik seviyede ürün yok.</div>
+  {% endif %}
+
+  <section class="cards">
+    <article class="card st-card out"><div class="label">Stokta bitmiş</div><div class="value">{{ summary.out_count }}</div><div class="sub">sipariş verilmeli</div></article>
+    <article class="card st-card low"><div class="label">Kritik seviyede</div><div class="value">{{ summary.low_count }}</div><div class="sub">kritik seviyenin altında, stok var</div></article>
+    <article class="card"><div class="label">Açık sipariş</div><div class="value">{{ summary.open_orders }}</div><div class="sub"><a href="{% url 'order_list' %}">Siparişlere git</a></div></article>
+    <article class="card"><div class="label">Son gün sonu</div><div class="value">{% if summary.last_closed_day %}{{ summary.last_closed_day|date:"d.m.Y" }}{% else %}—{% endif %}</div></article>
+    <article class="card"><div class="label">Toplam stok değeri</div><div class="value">{{ summary.stock_value|tl }} ₺</div></article>
+  </section>
+  {% for group in summary.groups %}
+  <details class="sec" style="--ac: {{ group.color }}">
+    <summary>
+      <span class="sec-ic" aria-hidden="true">{% if group.key == "mutfak_bar" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><path d="M6 2v2M10 2v2M14 2v2"/></svg>{% elif group.key == "tekstil" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7"/><path d="M3 15h18M7 9V6h10v3"/></svg>{% elif group.key == "temizlik" %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3h6v4H9z"/><path d="M8 7h8l1 14H7z"/><path d="M12 11v6"/></svg>{% else %}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2h6v4H9z"/><path d="M7 6h10v15a1 1 0 0 1-1 1H8a1 1 0 0 1-1-1z"/></svg>{% endif %}</span>
+      <span class="sec-t"><b>{{ group.title }}</b><small>{{ group.count }} ürün · stok değeri {{ group.value|tl }} ₺ · {{ group.categories }}</small></span>
+      <span class="pills">{% if group.out %}<span class="pill-out">{{ group.out }} tükendi</span>{% endif %}{% if group.critical %}<span class="pill-low">{{ group.critical }} kritik</span>{% endif %}</span>
+      <span class="sec-chev" aria-hidden="true"></span>
+    </summary>
+    <div class="sec-body">
+      <div class="table-wrap" style="padding:0;border:0;margin:0">
+      <table style="min-width:760px">
+        <thead><tr><th>Ürün</th><th style="text-align:left">Tedarikçi</th><th>Mevcut miktar</th><th>Kritik seviye</th><th>Siparişte</th><th>Birim maliyet</th><th>Stok değeri</th><th style="text-align:left">Durum</th></tr></thead>
+        <tbody>
+          {% for item in group.items %}<tr class="row-{{ item.status }}">
+            <td style="white-space:normal">{{ item.name }} <span class="help">{{ item.sku }}{% if group.key == "mutfak_bar" %} · {{ item.category }}{% endif %}</span></td>
+            <td style="text-align:left">{{ item.supplier|default:"—" }}</td>
+            <td>{{ item.quantity|miktar }} {{ item.unit }}</td>
+            <td>{{ item.critical_level|miktar }} {{ item.unit }}</td>
+            <td>{% if item.on_order %}{{ item.on_order|miktar }} {{ item.unit }}{% else %}—{% endif %}</td>
+            <td>{{ item.average_unit_cost|floatformat:2 }} ₺ / {{ item.unit }}</td>
+            <td>{{ item.value|tl }} ₺</td>
+            <td style="text-align:left">{% if item.status == "out" %}<a class="st-btn out" href="{% url 'order_create' item.supplier_id %}?urun={{ item.id|unlocalize }}">Stok bitti · sipariş verilmeli</a>{% elif item.status == "low" %}{% if item.on_order %}<a class="st-btn low ordered" href="{% url 'order_list' %}" title="Açık siparişte {{ item.on_order|miktar }} {{ item.unit }}">Kritik · siparişte</a>{% else %}<a class="st-btn low" href="{% url 'order_create' item.supplier_id %}?urun={{ item.id|unlocalize }}">Kritik · sipariş ver</a>{% endif %}{% else %}<a class="st-btn ok" href="{% url 'order_create' item.supplier_id %}?urun={{ item.id|unlocalize }}" title="Stok yeterli; yine de sipariş verilebilir">Yeterli</a>{% endif %}</td>
+          </tr>{% empty %}<tr><td colspan="8" style="text-align:center;color:#687d88;padding:20px">Bu başlıkta ürün yok.</td></tr>{% endfor %}
+        </tbody>
+      </table>
+      </div>
+    </div>
+  </details>
+  {% empty %}
+  <section class="panel"><p class="help" style="margin:0">Henüz stok ürünü yok. Ürünleri ve stok girişlerini Admin paneli ekranından ekleyin.</p></section>
+  {% endfor %}
+{% endblock %}
